@@ -37,22 +37,24 @@ _(empty)_
 
 ### Phase 2 — MVP 0.1 Backend
 
-- [ ] Implement `DecompressionSession` entity and `DecompressionSessionMapper`
-- [ ] Implement `DecompressionItem` entity and `DecompressionItemMapper`
-- [ ] Implement `POST /api/v1/decompression-sessions` — Create session
-- [ ] Implement `GET /api/v1/decompression-sessions/{id}` — Get session with items (ordered by sort_order)
-- [ ] Implement `POST /api/v1/decompression-sessions/{id}/items` — Add item (assign sort_order)
-- [ ] Implement `PATCH /api/v1/decompression-sessions/{id}/items/{itemId}/category` — Classify item
-- [ ] Implement `PUT /api/v1/decompression-sessions/{id}/first-action` — Set first action (update session.first_action_item_id)
-- [ ] Implement `GET /api/v1/decompression-sessions/{id}/summary` — Session summary (compute isFirstAction in DTO)
-- [ ] Implement `POST /api/v1/decompression-sessions/{id}/complete` — Complete session
-- [ ] Implement `DELETE /api/v1/decompression-sessions/{id}/items/{itemId}` — Delete item
-- [ ] Add global exception handler with error envelope
-- [ ] Add Bean Validation on all request DTOs
-- [ ] Write JUnit 5 service layer tests
-- [ ] Write JUnit 5 integration tests (create, add item, classify, complete)
-- [ ] Add Swagger annotations on all endpoints
-- [ ] Manual verification of full flow via Swagger UI
+- [x] Implement `DecompressionSession` and `DecompressionItem` domain objects + `Category` enum
+- [x] Implement custom exception classes: `SessionNotFoundException`, `ItemNotFoundException`, `SessionAlreadyCompleteException`, `ItemNotInSessionException`, `InvalidCategoryException`, `FirstActionIneligibleException`
+- [x] Implement request DTOs: `AddItemRequest`, `UpdateCategoryRequest`, `SetFirstActionRequest`
+- [x] Implement response DTOs: `ApiResponse<T>`, `SessionResponse`, `ItemResponse`, `SummaryResponse`, `CompleteSessionResponse`, `FirstActionResponse`, `DeleteItemResponse`, `ReviewResponse`
+- [x] Implement `DecompressionSessionMapper` + XML
+- [x] Implement `DecompressionItemMapper` + XML
+- [x] Implement `DecompressionSessionService` — all 7 methods with business rules
+- [x] Implement `DecompressionSessionController` — 7 endpoints:
+  - `POST /api/v1/decompression-sessions` (201)
+  - `POST /api/v1/decompression-sessions/{sessionId}/items` (201)
+  - `PATCH /api/v1/decompression-items/{itemId}/category` (200)
+  - `PATCH /api/v1/decompression-sessions/{sessionId}/first-action` (200)
+  - `POST /api/v1/decompression-sessions/{sessionId}/complete` (200)
+  - `GET /api/v1/decompression-sessions/{sessionId}/summary` (200)
+  - `GET /api/v1/decompression-sessions/{sessionId}/review` (200)
+- [x] Write `DecompressionSessionServiceTest` — 16 unit tests (Mockito) ✅
+- [x] Write `DecompressionSessionControllerTest` — 10 controller tests (@WebMvcTest) ✅
+- [x] All 28 tests pass: `./gradlew.bat test --no-daemon` BUILD SUCCESSFUL ✅
 
 ### Phase 3 — Flutter Desktop Client
 

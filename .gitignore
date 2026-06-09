@@ -1,0 +1,19 @@
+# Gradle
+.gradle/
+build/
+**/build/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.log

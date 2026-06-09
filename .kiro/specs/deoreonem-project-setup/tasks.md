@@ -84,70 +84,70 @@ _(empty — start a task to populate this section)_
 
 ### Phase 2 — Backend Decompression Flow
 
-- [ ] 2.1 Implement `DecompressionSession` and `DecompressionItem` domain objects
+- [x] 2.1 Implement `DecompressionSession` and `DecompressionItem` domain objects
   - `DecompressionSession.java` in `com.deoreonem.api.domain`: fields `sessionId` (UUID), `status` (String), `firstActionItemId` (UUID, nullable), `completedAt` (OffsetDateTime, nullable), `createdAt` (OffsetDateTime), `updatedAt` (OffsetDateTime), `items` (List<DecompressionItem>, for JOIN results)
   - `DecompressionItem.java` in `com.deoreonem.api.domain`: fields `itemId` (UUID), `sessionId` (UUID), `content` (String), `category` (String, nullable), `sortOrder` (int), `createdAt` (OffsetDateTime), `updatedAt` (OffsetDateTime)
   - Note: `isFirstAction` is NOT a field on `DecompressionItem`; it is computed in DTOs
   - _Requirements: 7.1, 7.2, 7.6_
 
-- [ ] 2.2 Implement all request and response DTOs
+- [x] 2.2 Implement all request and response DTOs
   - Request DTOs in `com.deoreonem.api.dto`: `CreateSessionRequest` (empty body), `AddItemRequest` (`@NotBlank @Size(max=500) String content`), `UpdateItemCategoryRequest` (`@NotNull String category`), `SetFirstActionRequest` (`@NotNull UUID itemId`)
   - Response DTOs: `SessionResponse`, `SessionWithItemsResponse` (extends/wraps SessionResponse + `List<ItemResponse> items`), `ItemResponse` (includes computed `boolean isFirstAction`), `SummaryResponse` (sessionId, status, totalItems, firstActionItem, `Map<String, List<...>> itemsByCategory`), `CompleteSessionResponse`, `FirstActionResponse`, `DeleteItemResponse`
   - All response DTOs wrapped in an `ApiResponse<T>` envelope with `success: true` and `data: T`
   - _Requirements: 6.1, 6.2, 6.6, 7.6_
 
-- [ ] 2.3 Implement `DecompressionSessionMapper` interface and XML
+- [x] 2.3 Implement `DecompressionSessionMapper` interface and XML
   - Interface `com.deoreonem.api.mapper.DecompressionSessionMapper` annotated `@Mapper`: `insertSession(DecompressionSession)`, `findById(UUID)`, `findByIdWithItems(UUID)` (JOIN returning session + ordered items), `updateStatus(UUID, String)`, `updateFirstAction(UUID, UUID)`, `updateCompletedAt(UUID, OffsetDateTime)`
   - XML mapper file `src/main/resources/mapper/DecompressionSessionMapper.xml` with all SQL statements; `findByIdWithItems` uses a `<resultMap>` with nested `<collection>` for items ordered by `sort_order ASC`
   - _Requirements: 7.1, 8.3_
 
-- [ ] 2.4 Implement `DecompressionItemMapper` interface and XML
+- [x] 2.4 Implement `DecompressionItemMapper` interface and XML
   - Interface `com.deoreonem.api.mapper.DecompressionItemMapper` annotated `@Mapper`: `insertItem(DecompressionItem)`, `findById(UUID)`, `findBySessionIdOrderBySortOrder(UUID)`, `updateCategory(UUID, String)`, `deleteById(UUID)`, `getMaxSortOrder(UUID)` (returns `Integer`, nullable)
   - XML mapper file `src/main/resources/mapper/DecompressionItemMapper.xml` with all SQL statements; `findBySessionIdOrderBySortOrder` orders by `sort_order ASC`; `getMaxSortOrder` returns `MAX(sort_order)` for given session
   - _Requirements: 7.2, 8.3_
 
-- [ ] 2.5 Implement custom exception classes for all 8 error codes
+- [x] 2.5 Implement custom exception classes for all 8 error codes
   - One exception class per error code in `com.deoreonem.api.exception`: `SessionNotFoundException`, `ItemNotFoundException`, `SessionAlreadyCompleteException`, `ItemNotInSessionException`, `InvalidCategoryException`, `FirstActionIneligibleException` — all extend `ApiException`; `ValidationException` handled by Spring's `MethodArgumentNotValidException`
   - Complete `GlobalExceptionHandler` handlers: map each exception type to its HTTP status and error code as defined in `docs/03_API_SPEC.md` Section 2
   - _Requirements: 6.5_
 
-- [ ] 2.6 Implement `DecompressionSessionService` — session creation and retrieval
+- [x] 2.6 Implement `DecompressionSessionService` — session creation and retrieval
   - `createSession()`: constructs `DecompressionSession`, calls `sessionMapper.insertSession`, returns `SessionResponse`
   - `getSession(UUID sessionId)`: calls `sessionMapper.findByIdWithItems`, throws `SessionNotFoundException` if null, computes `isFirstAction` for each item in response, returns `SessionWithItemsResponse`
   - _Requirements: 6.1, 6.2_
 
-- [ ] 2.7 Implement `DecompressionSessionService` — add item with `sort_order` assignment
+- [x] 2.7 Implement `DecompressionSessionService` — add item with `sort_order` assignment
   - `addItem(UUID sessionId, AddItemRequest)`: loads session (throws `SessionNotFoundException`); checks `COMPLETED` → throws `SessionAlreadyCompleteException`; calls `itemMapper.getMaxSortOrder(sessionId)`, assigns `sortOrder = max + 1` (or 1 if null); calls `itemMapper.insertItem`; returns `ItemResponse` with `isFirstAction = false`
   - _Requirements: 6.1, 7.2_
 
-- [ ] 2.8 Implement `DecompressionSessionService` — update item category
+- [x] 2.8 Implement `DecompressionSessionService` — update item category
   - `updateCategory(UUID sessionId, UUID itemId, UpdateItemCategoryRequest)`: validates session exists and is `IN_PROGRESS`; validates item exists; checks item belongs to session (throws `ItemNotInSessionException`); validates category is one of 7 valid values (throws `InvalidCategoryException`); calls `itemMapper.updateCategory`; returns `ItemResponse` with computed `isFirstAction`
   - _Requirements: 6.1, 6.2_
 
-- [ ] 2.9 Implement `DecompressionSessionService` — set First Action with category gate
+- [x] 2.9 Implement `DecompressionSessionService` — set First Action with category gate
   - `setFirstAction(UUID sessionId, SetFirstActionRequest)`: validates session exists and is `IN_PROGRESS`; loads item (throws `ItemNotFoundException`); checks item's category ∈ {NOW, TOMORROW, THIS_WEEK} (throws `FirstActionIneligibleException` for WAITING, MEMO, WORRY_ONLY, DROP, or null); calls `sessionMapper.updateFirstAction`; returns `FirstActionResponse`
   - _Requirements: 6.1_
 
-- [ ] 2.10 Implement `DecompressionSessionService` — get summary
+- [x] 2.10 Implement `DecompressionSessionService` — get summary
   - `getSummary(UUID sessionId)`: loads session with items; computes `isFirstAction` per item; groups items by category into `Map<String, List<...>>`; includes all 7 category keys (empty list for categories with no items); identifies `firstActionItem` by `firstActionItemId`; returns `SummaryResponse`
   - _Requirements: 6.1, 6.6, 7.6_
 
-- [ ] 2.11 Implement `DecompressionSessionService` — complete session
+- [x] 2.11 Implement `DecompressionSessionService` — complete session
   - `completeSession(UUID sessionId)`: loads session; checks already `COMPLETED` → throws `SessionAlreadyCompleteException`; calls `sessionMapper.updateStatus(sessionId, "COMPLETED")` and `sessionMapper.updateCompletedAt(sessionId, OffsetDateTime.now())`; returns `CompleteSessionResponse`
   - _Requirements: 6.1, 6.2_
 
-- [ ] 2.12 Implement `DecompressionSessionService` — delete item
+- [x] 2.12 Implement `DecompressionSessionService` — delete item
   - `deleteItem(UUID sessionId, UUID itemId)`: validates session exists and is `IN_PROGRESS`; loads item (throws `ItemNotFoundException`); checks item belongs to session; calls `itemMapper.deleteById`; returns `DeleteItemResponse` with `deleted: true`
   - _Requirements: 6.1_
 
-- [ ] 2.13 Implement `DecompressionSessionController` with all 8 endpoints
+- [x] 2.13 Implement `DecompressionSessionController` with all 8 endpoints
   - `@RestController @RequestMapping("/api/v1/decompression-sessions")` in `com.deoreonem.api.controller`
   - Map all 8 endpoints: `POST /` → 201, `GET /{sessionId}` → 200, `POST /{sessionId}/items` → 201, `PATCH /{sessionId}/items/{itemId}/category` → 200, `PUT /{sessionId}/first-action` → 200, `GET /{sessionId}/summary` → 200, `POST /{sessionId}/complete` → 200, `DELETE /{sessionId}/items/{itemId}` → 200
   - Delegate to `DecompressionSessionService`; wrap all responses in `ApiResponse<T>` envelope
   - Add `@Operation` / `@ApiResponse` springdoc annotations per endpoint
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 2.14 Write `DecompressionSessionServiceTest` (unit tests, JUnit 5 + Mockito)
+- [x] 2.14 Write `DecompressionSessionServiceTest` (unit tests, JUnit 5 + Mockito)
   - Mock `DecompressionSessionMapper` and `DecompressionItemMapper`
   - Test: COMPLETED session rejects `addItem`, `updateCategory`, `setFirstAction`, `complete` — each throws correct exception
   - Test: `setFirstAction` with each ineligible category (WAITING, MEMO, WORRY_ONLY, DROP, null) throws `FirstActionIneligibleException`
@@ -155,14 +155,14 @@ _(empty — start a task to populate this section)_
   - Test: `isFirstAction` computed correctly — true only for item matching `firstActionItemId`, false for all others, zero when `firstActionItemId` is null
   - _Requirements: 6.1, 6.2, 6.6_
 
-- [ ] 2.15 Write mapper tests (`@MybatisTest`)
+- [x] 2.15 Write mapper tests (`@MybatisTest`)
   - Use `@MybatisTest` with embedded or test PostgreSQL
   - Test: `insertItem` assigns `sort_order = MAX(sort_order) + 1` relative to the session; first item gets `sort_order = 1`
   - Test: `findBySessionIdOrderBySortOrder` returns items in strict ascending `sort_order` order regardless of insertion timing
   - Test: `deleteById` removes exactly the target item; other session items are unaffected; item count decreases by exactly 1
   - _Requirements: 7.2_
 
-- [ ] 2.16 Write API integration tests (`@SpringBootTest`)
+- [x] 2.16 Write API integration tests (`@SpringBootTest`)
   - Full request/response cycle using `MockMvc` or `TestRestTemplate` for each of the 8 endpoints
   - Test error envelope shape for every named error code: `{ "success": false, "error": { "code": "...", "message": "..." } }`
   - Test `GET .../summary` groups items correctly by category; `DROP` items appear in summary but are excluded from First Action eligibility
@@ -201,7 +201,7 @@ _(empty — start a task to populate this section)_
   - Minimum 100 iterations
   - Tag: `// Feature: deoreonem-project-setup, Property 4: First Action eligibility is category-gated`
 
-- [ ] 2.21 Phase 2 exit criteria — all 8 endpoints pass integration tests; all domain rules verified
+- [x] 2.21 Phase 2 exit criteria — all 8 endpoints pass integration tests; all domain rules verified
   - Run `./gradlew test`; all unit, mapper, integration, and property-based tests pass
   - Verify all 8 error codes are reachable and return the correct HTTP status and envelope shape
   - _Requirements: 6.1, 6.2, 6.5, 7.2, 8.3_

@@ -131,3 +131,65 @@
 ### What Comes Next
 
 - **Phase 2:** Implement all 8 decompression session/item REST endpoints with domain rules, MyBatis mappers, service layer, and tests
+
+---
+
+## Checkpoint: Phase 2 — Backend Decompression Flow
+
+**Date:** 2026-06-10
+**Status:** ✅ Complete
+
+### What Was Completed
+
+- Domain objects: `DecompressionSession`, `DecompressionItem`, `Category` enum (validation + first-action eligibility)
+- Custom exception classes (6): `SessionNotFoundException`, `ItemNotFoundException`, `SessionAlreadyCompleteException`, `ItemNotInSessionException`, `InvalidCategoryException`, `FirstActionIneligibleException`
+- Request DTOs: `AddItemRequest`, `UpdateCategoryRequest`, `SetFirstActionRequest`
+- Response DTOs: `ApiResponse<T>`, `SessionResponse`, `ItemResponse`, `SummaryResponse`, `CompleteSessionResponse`, `FirstActionResponse`, `DeleteItemResponse`, `ReviewResponse`
+- MyBatis mappers: `DecompressionSessionMapper` + `DecompressionItemMapper` (interfaces + XML)
+- Service layer: `DecompressionSessionService` with 7 methods and all business rule enforcement
+- Controller: `DecompressionSessionController` with 7 REST endpoints
+- Tests: 28 total (16 service unit tests + 10 controller tests + 2 health tests) — ALL PASS
+
+### Endpoints Implemented
+
+| Method | Path | HTTP Status |
+|---|---|---|
+| POST | `/api/v1/decompression-sessions` | 201 Created |
+| POST | `/api/v1/decompression-sessions/{sessionId}/items` | 201 Created |
+| PATCH | `/api/v1/decompression-items/{itemId}/category` | 200 OK |
+| PATCH | `/api/v1/decompression-sessions/{sessionId}/first-action` | 200 OK |
+| POST | `/api/v1/decompression-sessions/{sessionId}/complete` | 200 OK |
+| GET | `/api/v1/decompression-sessions/{sessionId}/summary` | 200 OK |
+| GET | `/api/v1/decompression-sessions/{sessionId}/review` | 200 OK |
+
+### Business Rules Enforced
+
+- Completed sessions reject all mutations → `SESSION_ALREADY_COMPLETE` (409)
+- `first_action_item_id` must belong to same session → `ITEM_NOT_IN_SESSION` (400)
+- First Action eligibility: only NOW/TOMORROW/THIS_WEEK → `FIRST_ACTION_INELIGIBLE` (400)
+- Category validation: only 7 valid values → `INVALID_CATEGORY` (400)
+- `sort_order` assigned as MAX+1 at insert time
+- `isFirstAction` computed in DTOs, never stored in DB
+- DROP items excluded from review endpoint
+
+### Key Decisions Made
+
+- **`Category` enum** with static validation methods rather than a plain constant class — cleaner for eligibility checks
+- **`PATCH` for category and first-action** rather than PUT — partial update semantics
+- **`ReviewResponse`** as separate endpoint for next-day review (excludes DROP items)
+- **`@WebMvcTest` for controller tests** — fast, no DB needed; service layer mocked
+
+### Current Project State
+
+- Phase 2 complete: all 7 decompression endpoints implemented with full domain rules
+- 28 tests pass (`./gradlew.bat test --no-daemon` → BUILD SUCCESSFUL)
+- Ready for Phase 3: Flutter desktop shell
+
+### Known Issues / Open Questions
+
+- No `DELETE` endpoint implemented (not in the user's current endpoint list for Phase 2)
+- Mapper tests (`@MybatisTest`) not written — would require embedded/test PostgreSQL container
+
+### What Comes Next
+
+- **Phase 3:** Flutter desktop shell — 6 screens with static UI, linear navigation

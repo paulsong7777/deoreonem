@@ -25,6 +25,43 @@
 
 ---
 
+## 2026-06-10 (session 3)
+
+**Session duration:** ~2h
+**Phase:** Phase 2 — Backend Decompression Flow
+
+### Done
+
+- Implemented entire Phase 2 backend:
+  - Domain: `DecompressionSession`, `DecompressionItem`, `Category` enum
+  - Exceptions: 6 custom exception classes extending `ApiException`
+  - DTOs: 3 request + 8 response classes (including generic `ApiResponse<T>` envelope)
+  - MyBatis: 2 mapper interfaces + 2 XML mapper files (full SQL)
+  - Service: `DecompressionSessionService` with 7 methods and all business rules
+  - Controller: `DecompressionSessionController` with 7 REST endpoints
+  - Tests: `DecompressionSessionServiceTest` (16 tests) + `DecompressionSessionControllerTest` (10 tests)
+- Ran `./gradlew.bat test --no-daemon`: BUILD SUCCESSFUL (28 tests, 0 failures)
+- All business rules verified through unit tests:
+  - Completed session guard
+  - sort_order assignment
+  - Category validation
+  - First Action eligibility gate
+  - Item-session ownership check
+  - DROP exclusion from review
+  - isFirstAction computed in DTO
+
+### Next
+
+- Begin Phase 3: Flutter desktop shell (6 screens, static UI, navigation)
+
+### Blockers / Notes
+
+- No blockers. Phase 2 complete.
+- Mapper tests (`@MybatisTest`) deferred — would need embedded Postgres or Testcontainers
+- DELETE item endpoint not in user's current Phase 2 scope
+
+---
+
 ## 2026-06-10 (session 2)
 
 **Session duration:** ~30min

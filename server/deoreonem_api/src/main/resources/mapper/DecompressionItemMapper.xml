@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.deoreonem.api.mapper.DecompressionItemMapper">
+
+    <insert id="insertItem" parameterType="com.deoreonem.api.domain.DecompressionItem">
+        INSERT INTO decompression_item (item_id, session_id, content, category, sort_order, created_at, updated_at)
+        VALUES (#{itemId}, #{sessionId}, #{content}, #{category}, #{sortOrder}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findById" resultType="com.deoreonem.api.domain.DecompressionItem">
+        SELECT item_id, session_id, content, category, sort_order, created_at, updated_at
+        FROM decompression_item
+        WHERE item_id = #{itemId}
+    </select>
+
+    <select id="findBySessionIdOrderBySortOrder" resultType="com.deoreonem.api.domain.DecompressionItem">
+        SELECT item_id, session_id, content, category, sort_order, created_at, updated_at
+        FROM decompression_item
+        WHERE session_id = #{sessionId}
+        ORDER BY sort_order ASC
+    </select>
+
+    <update id="updateCategory">
+        UPDATE decompression_item
+        SET category = #{category}
+        WHERE item_id = #{itemId}
+    </update>
+
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT MAX(sort_order)
+        FROM decompression_item
+        WHERE session_id = #{sessionId}
+    </select>
+
+</mapper>

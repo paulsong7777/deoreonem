@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.deoreonem.api.mapper.DecompressionSessionMapper">
+
+    <insert id="insertSession" parameterType="com.deoreonem.api.domain.DecompressionSession">
+        INSERT INTO decompression_session (session_id, status, first_action_item_id, completed_at, created_at, updated_at)
+        VALUES (#{sessionId}, #{status}, #{firstActionItemId}, #{completedAt}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <select id="findById" resultType="com.deoreonem.api.domain.DecompressionSession">
+        SELECT session_id, status, first_action_item_id, completed_at, created_at, updated_at
+        FROM decompression_session
+        WHERE session_id = #{sessionId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE decompression_session
+        SET status = #{status}
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="updateFirstAction">
+        UPDATE decompression_session
+        SET first_action_item_id = #{itemId}
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="updateCompletedAt">
+        UPDATE decompression_session
+        SET completed_at = #{completedAt}
+        WHERE session_id = #{sessionId}
+    </update>
+
+</mapper>
