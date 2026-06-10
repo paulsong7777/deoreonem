@@ -1,15 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:deoreonem_desktop/screens/classification_screen.dart';
+import 'package:deoreonem_desktop/providers/session_provider.dart';
+import 'package:deoreonem_desktop/providers/items_provider.dart';
+import 'package:deoreonem_desktop/models/session_model.dart';
+import 'package:deoreonem_desktop/models/item_model.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:deoreonem_desktop/api/decompression_api_service.dart';
+
+class MockApiService extends Mock implements DecompressionApiService {}
 
 void main() {
+  late MockApiService mockApi;
+
+  setUp(() {
+    mockApi = MockApiService();
+  });
+
+  Widget buildWidget(List<ItemModel> items) {
+    return ProviderScope(
+      overrides: [
+        sessionProvider.overrideWith((ref) {
+          final notifier = SessionNotifier(mockApi);
+          notifier.state = AsyncValue.data(SessionModel(
+            sessionId: 'session-1',
+            status: 'IN_PROGRESS',
+            createdAt: DateTime.utc(2026, 6, 9),
+            updatedAt: DateTime.utc(2026, 6, 9),
+          ));
+          return notifier;
+        }),
+        itemsProvider.overrideWith((ref) {
+          final notifier = ItemsNotifier(mockApi);
+          notifier.state = AsyncValue.data(items);
+          return notifier;
+        }),
+      ],
+      child: const MaterialApp(home: ClassificationScreen()),
+    );
+  }
+
   testWidgets('ClassificationScreen shows item card and 7 category buttons',
       (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ClassificationScreen()));
+    final items = [
+      ItemModel(
+        itemId: 'item-1',
+        sessionId: 'session-1',
+        content: 'API 설계 마저 하기',
+        category: null,
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 9),
+        updatedAt: DateTime.utc(2026, 6, 9),
+      ),
+      ItemModel(
+        itemId: 'item-2',
+        sessionId: 'session-1',
+        content: '리뷰 요청 답변 보내기',
+        category: null,
+        isFirstAction: false,
+        sortOrder: 2,
+        createdAt: DateTime.utc(2026, 6, 9),
+        updatedAt: DateTime.utc(2026, 6, 9),
+      ),
+    ];
+
+    await tester.pumpWidget(buildWidget(items));
 
     // Progress text
     expect(find.textContaining('분류됨'), findsOneWidget);
-    // First few category buttons visible
+    // Category buttons
     expect(find.text('지금'), findsOneWidget);
     expect(find.text('내일'), findsOneWidget);
     expect(find.text('이번 주'), findsOneWidget);
@@ -26,7 +87,7 @@ void main() {
 
     expect(find.text('걱정만'), findsOneWidget);
     expect(find.text('버리기'), findsOneWidget);
-    // Item card with mock content
+    // Item card with content
     expect(find.byType(Card), findsWidgets);
   });
 }

@@ -1,24 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
+import '../providers/session_provider.dart';
+import '../providers/items_provider.dart';
+import '../providers/api_provider.dart';
 
-class FirstActionScreen extends StatefulWidget {
+class FirstActionScreen extends ConsumerStatefulWidget {
   const FirstActionScreen({super.key});
 
   @override
-  State<FirstActionScreen> createState() => _FirstActionScreenState();
+  ConsumerState<FirstActionScreen> createState() => _FirstActionScreenState();
 }
 
-class _FirstActionScreenState extends State<FirstActionScreen> {
-  // Mock eligible items (NOW/TOMORROW/THIS_WEEK only)
-  final List<String> _eligibleItems = [
-    'API 설계 마저 하기',
-    '리뷰 요청 답변 보내기',
-  ];
+class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
   int? _selectedIndex;
+  bool _isSaving = false;
+
+  Future<void> _setFirstAction() async {
+    final session = ref.read(sessionProvider).valueOrNull;
+    if (session == null || _selectedIndex == null) return;
+
+    final eligible = ref.read(itemsProvider.notifier).eligibleForFirstAction;
+    if (_selectedIndex! >= eligible.length) return;
+
+    final item = eligible[_selectedIndex!];
+    setState(() => _isSaving = true);
+
+    try {
+      await ref
+          .read(apiServiceProvider)
+          .setFirstAction(session.sessionId, item.itemId);
+      if (mounted) context.go('/summary');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final itemsState = ref.watch(itemsProvider);
+    final eligible = ref.read(itemsProvider.notifier).eligibleForFirstAction;
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -34,35 +62,45 @@ class _FirstActionScreenState extends State<FirstActionScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: ListView.builder(
-                itemCount: _eligibleItems.length,
-                itemBuilder: (context, index) {
-                  final isSelected = _selectedIndex == index;
-                  return Card(
-                    color: isSelected
-                        ? AppTheme.accent.withValues(alpha: 0.1)
-                        : null,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(
-                        color: isSelected ? AppTheme.accent : AppTheme.border,
-                        width: isSelected ? 2 : 1,
+              child: itemsState.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('오류: $e')),
+                data: (_) => ListView.builder(
+                  itemCount: eligible.length,
+                  itemBuilder: (context, index) {
+                    final isSelected = _selectedIndex == index;
+                    return Card(
+                      color: isSelected
+                          ? AppTheme.accent.withValues(alpha: 0.1)
+                          : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color:
+                              isSelected ? AppTheme.accent : AppTheme.border,
+                          width: isSelected ? 2 : 1,
+                        ),
                       ),
-                    ),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(_eligibleItems[index]),
-                      leading: Radio<int>(
-                        value: index,
-                        groupValue: _selectedIndex,
-                        onChanged: (val) =>
-                            setState(() => _selectedIndex = val),
-                        activeColor: AppTheme.accent,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(eligible[index].content),
+                        leading: Radio<int>(
+                          value: index,
+                          groupValue: _selectedIndex,
+                          onChanged: _isSaving
+                              ? null
+                              : (val) =>
+                                  setState(() => _selectedIndex = val),
+                          activeColor: AppTheme.accent,
+                        ),
+                        onTap: _isSaving
+                            ? null
+                            : () => setState(() => _selectedIndex = index),
                       ),
-                      onTap: () => setState(() => _selectedIndex = index),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -70,17 +108,25 @@ class _FirstActionScreenState extends State<FirstActionScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => context.go('/summary'),
+                    onPressed: _isSaving ? null : () => context.go('/summary'),
                     child: const Text('건너뛰기'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _selectedIndex != null
-                        ? () => context.go('/summary')
-                        : null,
-                    child: const Text('다음'),
+                    onPressed:
+                        (_selectedIndex != null && !_isSaving)
+                            ? _setFirstAction
+                            : null,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('다음'),
                   ),
                 ),
               ],

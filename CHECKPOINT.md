@@ -240,3 +240,57 @@
 ### What Comes Next
 
 - **Phase 4:** Wire Flutter client to live REST API via Dio + Riverpod providers
+
+---
+
+## Checkpoint: Phase 4 — Flutter ↔ REST Integration
+
+**Date:** 2026-06-10
+**Status:** ✅ Complete (code + tests)
+
+### What Was Completed
+
+- Dart API models: `SessionModel`, `ItemModel`, `SummaryModel` with `fromJson`/`toJson`/`copyWith`
+- API exception class: `ApiException` with code, message, statusCode
+- `DecompressionApiService` — Dio-based service wrapping all 6 backend endpoints with error normalization
+- Riverpod providers: `apiServiceProvider`, `sessionProvider` (StateNotifier), `itemsProvider` (StateNotifier), `summaryProvider` (StateNotifier)
+- All 6 screens updated to use providers and real API calls:
+  - StartScreen → creates session
+  - DumpInputScreen → adds items
+  - ClassificationScreen → updates category per item
+  - FirstActionScreen → sets first action
+  - EntrustedSummaryScreen → loads summary + completes session
+  - CompletionScreen → static (no API call)
+- Loading indicators and error handling (inline messages, retry, disabled buttons)
+- 34 Flutter tests pass (3 model + 7 API service + 6 provider + 6 screen + 12 existing)
+- Dev dependencies added: `http_mock_adapter`, `mocktail`
+
+### Key Decisions Made
+
+- **Dio injection** via constructor for testability — service accepts optional Dio instance
+- **AsyncValue** from Riverpod for loading/error/data states — maps cleanly to UI
+- **Error normalization interceptor** in `_request` method — parses backend error envelope or wraps DioException
+- **No getReview integration in UI** — review endpoint exists but not wired to any screen in MVP 0.1 (would require a separate "next day" screen)
+- **CompletionScreen stays static** — completeSession called from EntrustedSummaryScreen before navigation
+
+### Current Project State
+
+- Full Flutter ↔ REST integration complete
+- 34 Flutter tests + 28 backend tests all pass
+- End-to-end session flow: Start → Dump → Classify → First Action → Summary → Complete
+- Manual verification with live backend pending (requires VS build tools + running PostgreSQL Docker)
+
+### Known Issues / Open Questions
+
+- Windows native build not verified (requires Visual Studio C++ workload)
+- Manual end-to-end test pending: backend must be running + app must be built
+- `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
+- `updateCategory` path: Flutter uses `/decompression-items/{itemId}/category` per Phase 2 controller
+
+### What Comes Next
+
+- Manual end-to-end verification with backend running
+- Visual polish pass
+- Edge case handling (empty session, server errors)
+- Windows distributable build
+- README update with full setup instructions

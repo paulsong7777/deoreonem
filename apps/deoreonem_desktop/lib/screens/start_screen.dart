@@ -1,11 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/session_provider.dart';
+import '../providers/items_provider.dart';
+import '../providers/summary_provider.dart';
 
-class StartScreen extends StatelessWidget {
+class StartScreen extends ConsumerWidget {
   const StartScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionState = ref.watch(sessionProvider);
+    final isLoading = sessionState is AsyncLoading;
+
+    ref.listen<AsyncValue>(sessionProvider, (prev, next) {
+      next.whenOrNull(
+        data: (session) {
+          if (session != null) {
+            context.go('/dump');
+          }
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$error'),
+              action: SnackBarAction(
+                label: '다시 시도',
+                onPressed: () =>
+                    ref.read(sessionProvider.notifier).createSession(),
+              ),
+            ),
+          );
+        },
+      );
+    });
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -28,8 +57,22 @@ class StartScreen extends StatelessWidget {
               ),
               const SizedBox(height: 48),
               ElevatedButton(
-                onPressed: () => context.go('/dump'),
-                child: const Text('시작하기'),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        // Reset state for a fresh session
+                        ref.read(itemsProvider.notifier).reset();
+                        ref.read(summaryProvider.notifier).reset();
+                        ref.read(sessionProvider.notifier).createSession();
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('시작하기'),
               ),
               const Spacer(),
               Text(

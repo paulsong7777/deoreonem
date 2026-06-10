@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
+import '../providers/session_provider.dart';
+import '../providers/summary_provider.dart';
+import '../providers/api_provider.dart';
 
-class EntrustedSummaryScreen extends StatelessWidget {
+class EntrustedSummaryScreen extends ConsumerStatefulWidget {
   const EntrustedSummaryScreen({super.key});
 
-  // Mock summary data
-  static const Map<String, List<String>> mockItemsByCategory = {
-    'NOW': ['API 설계 마저 하기'],
-    'TOMORROW': ['리뷰 요청 답변 보내기'],
-    'THIS_WEEK': [],
-    'WAITING': [],
-    'MEMO': [],
-    'WORRY_ONLY': ['프로젝트 방향 맞는 걸까'],
-    'DROP': [],
-  };
+  @override
+  ConsumerState<EntrustedSummaryScreen> createState() =>
+      _EntrustedSummaryScreenState();
+}
+
+class _EntrustedSummaryScreenState
+    extends ConsumerState<EntrustedSummaryScreen> {
+  bool _isCompleting = false;
 
   static const Map<String, String> categoryLabels = {
     'NOW': '지금',
@@ -26,73 +28,145 @@ class EntrustedSummaryScreen extends StatelessWidget {
     'DROP': '버리기',
   };
 
-  int get _totalItems =>
-      mockItemsByCategory.values.fold(0, (sum, list) => sum + list.length);
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = ref.read(sessionProvider).valueOrNull;
+      if (session != null) {
+        ref.read(summaryProvider.notifier).loadSummary(session.sessionId);
+      }
+    });
+  }
+
+  Future<void> _completeSession() async {
+    final session = ref.read(sessionProvider).valueOrNull;
+    if (session == null) return;
+
+    setState(() => _isCompleting = true);
+    try {
+      await ref.read(apiServiceProvider).completeSession(session.sessionId);
+      if (mounted) context.go('/complete');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCompleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final summaryState = ref.watch(summaryProvider);
+
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('오늘의 덜어냄',
-                style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            // First Action highlight
-            Card(
-              color: AppTheme.accent.withValues(alpha: 0.08),
-              child: const ListTile(
-                leading: Icon(Icons.star, color: AppTheme.accent),
-                title: Text('API 설계 마저 하기'),
-                subtitle: Text('내일 가장 먼저'),
+      body: summaryState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('요약을 불러오는데 실패했어요.'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final session = ref.read(sessionProvider).valueOrNull;
+                  if (session != null) {
+                    ref
+                        .read(summaryProvider.notifier)
+                        .loadSummary(session.sessionId);
+                  }
+                },
+                child: const Text('다시 시도'),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '총 ${_totalItems}개를 맡겼습니다.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                children: mockItemsByCategory.entries
-                    .where((e) => e.value.isNotEmpty)
-                    .map((entry) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                categoryLabels[entry.key] ?? entry.key,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.secondaryText,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            ...entry.value.map((item) => Card(
-                                  margin: const EdgeInsets.only(bottom: 4),
-                                  child: ListTile(
-                                    title: Text(item,
-                                        style: const TextStyle(fontSize: 14)),
-                                    dense: true,
-                                  ),
-                                )),
-                          ],
-                        ))
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.go('/complete'),
-              child: const Text('완료하기'),
-            ),
-          ],
+            ],
+          ),
         ),
+        data: (summary) {
+          if (summary == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('오늘의 덜어냄',
+                    style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                // First Action highlight
+                if (summary.firstActionItem != null)
+                  Card(
+                    color: AppTheme.accent.withValues(alpha: 0.08),
+                    child: ListTile(
+                      leading: const Icon(Icons.star, color: AppTheme.accent),
+                      title: Text(summary.firstActionItem!.content),
+                      subtitle: const Text('내일 가장 먼저'),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  '총 ${summary.totalItems}개를 맡겼습니다.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView(
+                    children: summary.itemsByCategory.entries
+                        .where((e) => e.value.isNotEmpty)
+                        .map((entry) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    categoryLabels[entry.key] ?? entry.key,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.secondaryText,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                ...entry.value.map((item) => Card(
+                                      margin: const EdgeInsets.only(bottom: 4),
+                                      child: ListTile(
+                                        title: Text(item.content,
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        dense: true,
+                                        leading: item.isFirstAction
+                                            ? const Icon(Icons.star,
+                                                size: 16,
+                                                color: AppTheme.accent)
+                                            : null,
+                                      ),
+                                    )),
+                              ],
+                            ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _isCompleting ? null : _completeSession,
+                  child: _isCompleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('완료하기'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

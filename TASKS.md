@@ -75,9 +75,24 @@ _(empty)_
 
 ### Phase 4 — Polish & MVP Release
 
+- [x] Wire StartScreen to real API (create session)
+- [x] Wire DumpInputScreen to real API (add items)
+- [x] Wire ClassificationScreen to real API (update category)
+- [x] Wire FirstActionScreen to real API (set first action)
+- [x] Wire EntrustedSummaryScreen to real API (load summary + complete session)
+- [x] Add Dart model classes: SessionModel, ItemModel, SummaryModel
+- [x] Add DecompressionApiService with Dio (all 6 endpoints)
+- [x] Add Riverpod providers: session, items, summary
+- [x] Add loading states for async API calls
+- [x] Add inline error messages for API failures
+- [x] Write model serialization tests ✅
+- [x] Write API service tests (mocked Dio) ✅
+- [x] Write provider tests (mocked service) ✅
+- [x] Update widget tests with ProviderScope overrides ✅
+- [x] All 34 Flutter tests pass ✅
+- [ ] Manual end-to-end test on Windows with backend running
 - [ ] Handle edge cases: empty session, offline, server errors
 - [ ] Visual polish pass on all screens
-- [ ] Write Flutter widget tests for key screens
 - [ ] Update README with setup and run instructions
 - [ ] Verify `flutter build windows` produces clean build
 - [ ] Create distributable Windows package

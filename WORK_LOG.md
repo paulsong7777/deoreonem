@@ -25,6 +25,43 @@
 
 ---
 
+## 2026-06-10 (session 5)
+
+**Session duration:** ~2h
+**Phase:** Phase 4 — Flutter ↔ REST Integration
+
+### Done
+
+- Added Dart models: `SessionModel`, `ItemModel`, `SummaryModel` (fromJson/toJson/copyWith)
+- Added `ApiException` and `DecompressionApiService` (Dio-based, 6 endpoints, error normalization)
+- Added Riverpod providers: `apiServiceProvider`, `sessionProvider`, `itemsProvider`, `summaryProvider`
+- Updated all 6 screens to use real providers + API calls:
+  - StartScreen creates session on "시작하기"
+  - DumpInputScreen adds items to real session
+  - ClassificationScreen updates item categories one-at-a-time
+  - FirstActionScreen sets first action for eligible items
+  - EntrustedSummaryScreen loads summary and completes session
+  - CompletionScreen stays static
+- Added loading indicators and inline Korean error messages with retry
+- Added dev dependencies: `http_mock_adapter`, `mocktail`
+- Wrote 27 new tests: 3 model + 7 API service + 6 provider + 6 updated screen tests
+- `flutter test` → 34 tests passed ✅
+
+### Next
+
+- Manual end-to-end verification with live backend
+- Visual polish and edge case handling
+- Windows build verification
+- README setup instructions update
+
+### Blockers / Notes
+
+- Windows native build not verified (needs Visual Studio C++ Desktop workload)
+- Manual e2e test needs: PostgreSQL Docker + Spring Boot running + Flutter Windows build
+- `getReview` endpoint not wired to UI — no "next day review" screen in MVP 0.1
+
+---
+
 ## 2026-06-10 (session 4)
 
 **Session duration:** ~1.5h
