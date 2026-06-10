@@ -286,8 +286,9 @@
 - **Windows build** — FIXED: Korean title → Unicode escapes; `flutter build windows` succeeds
 - **MyBatis UUID TypeHandler** — FIXED: custom `UuidTypeHandler` registered; bootRun succeeds
 - **ClassificationScreen crash** — FIXED: API path mismatch + empty-list guard added
+- **CompletionScreen close button** — FIXED: `SystemNavigator.pop()` → `dart:io exit(0)` with injectable callback for tests
 - `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
-- Full live verification achieved: backend starts, health returns 200, Flutter builds and runs
+- Full live verification achieved: backend starts, health returns 200, Flutter builds and runs, full flow works
 
 ### What Comes Next
 

@@ -1,9 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme.dart';
 
 class CompletionScreen extends StatelessWidget {
-  const CompletionScreen({super.key});
+  /// Injectable close action for testability. Defaults to exit(0) on desktop.
+  final VoidCallback? onClose;
+
+  const CompletionScreen({super.key, this.onClose});
+
+  void _handleClose() {
+    if (onClose != null) {
+      onClose!();
+    } else {
+      exit(0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +43,7 @@ class CompletionScreen extends StatelessWidget {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () => SystemNavigator.pop(),
+                onPressed: _handleClose,
                 child: const Text(
                   '닫기',
                   style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),

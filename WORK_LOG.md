@@ -72,6 +72,8 @@
   - ClassificationScreen crash: FIXED (API path mismatch + empty-list guard) ✅
   - Windows title encoding: Fixed (Unicode escapes) ✅
   - Live E2E: backend health verified, Windows app launches, classification fix applied
+  - CompletionScreen close: FIXED (`SystemNavigator.pop()` → `dart:io exit(0)`) ✅
+  - `flutter test`: 36 tests pass ✅
 
 ---
 
