@@ -59,22 +59,19 @@ _(empty)_
 ### Phase 3 — Flutter Desktop Client
 
 - [x] Choose: Riverpod
-- [ ] Scaffold Flutter project (`apps/deoreonem_desktop`)
-- [ ] Enable Windows desktop target
-- [ ] Add dependencies: Dio, Riverpod
-- [ ] Configure app theme (colors, fonts, window size)
-- [ ] Create Dart model classes: DecompressionSession, DecompressionItem
-- [ ] Create API client service with Dio (base URL: `/api/v1/decompression-sessions`)
-- [ ] Implement Screen 1: Start Screen
-- [ ] Implement Screen 2: Item Entry Screen
-- [ ] Implement Screen 3: Item Classification Screen
-- [ ] Implement Screen 4: First Action Selection Screen
-- [ ] Implement Screen 5: Session Summary Screen
-- [ ] Implement Screen 6: Completion Screen
-- [ ] Wire navigation flow end-to-end
-- [ ] Add loading states for async API calls
-- [ ] Add inline error messages for API failures
-- [ ] Manual end-to-end test on Windows
+- [x] Scaffold Flutter project (`apps/deoreonem_desktop`) — Flutter 3.41.1, Windows target
+- [x] Enable Windows desktop target (non-resizable 480×680, title "덜어냄")
+- [x] Add dependencies: flutter_riverpod, dio, go_router
+- [x] Configure app theme (warm palette from UX spec, Noto Sans KR-compatible)
+- [x] Implement Screen 1: StartScreen — app name, subtitle, start button, version
+- [x] Implement Screen 2: DumpInputScreen — text input, add/remove items, disabled next when empty
+- [x] Implement Screen 3: ClassificationScreen — one-at-a-time, 7 category buttons, progress
+- [x] Implement Screen 4: FirstActionScreen — eligible items, radio selection, skip option
+- [x] Implement Screen 5: EntrustedSummaryScreen — grouped by category, first action highlight
+- [x] Implement Screen 6: CompletionScreen — closing message, no CTAs
+- [x] Wire navigation flow end-to-end (go_router linear)
+- [x] Widget tests for all 6 screens — 7 tests pass ✅
+- [ ] Manual end-to-end test on Windows — requires Visual Studio build tools
 
 ### Phase 4 — Polish & MVP Release
 

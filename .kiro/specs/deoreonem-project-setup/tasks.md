@@ -210,30 +210,30 @@ _(empty — start a task to populate this section)_
 
 ### Phase 3 — Flutter Desktop Shell
 
-- [ ] 3.1 Create Flutter Windows project for `apps/deoreonem_desktop`
+- [x] 3.1 Create Flutter Windows project for `apps/deoreonem_desktop`
   - Run `flutter create --platforms=windows apps/deoreonem_desktop` from monorepo root
   - Set window title to "덜어냄" in `windows/runner/main.cpp` or via `window_manager`
   - Set window size to approximately 480×680px, non-resizable in `windows/runner/main.cpp`
   - _Requirements: 4.1, 4.5_
 
-- [ ] 3.2 Configure `pubspec.yaml` with required dependencies
+- [x] 3.2 Configure `pubspec.yaml` with required dependencies
   - Add dependencies: `flutter_riverpod`, `dio`, `go_router` (or `Navigator 2.0`)
   - Ensure `flutter` SDK minimum version is compatible with the chosen packages
   - _Requirements: 5.4, 5.5_
 
-- [ ] 3.3 Scaffold all 6 screen files under `lib/screens/`
+- [x] 3.3 Scaffold all 6 screen files under `lib/screens/`
   - Create: `start_screen.dart`, `dump_input_screen.dart`, `classification_screen.dart`, `first_action_screen.dart`, `entrusted_summary_screen.dart`, `completion_screen.dart`
   - Each file: `StatefulWidget` or `ConsumerWidget` with a `Scaffold` and a placeholder `Column`
   - _Requirements: 4.1_
 
-- [ ] 3.4 Implement `StartScreen` static UI
+- [x] 3.4 Implement `StartScreen` static UI
   - App name "덜어냄" large centered light-weight text
   - Subtitle: "오늘 머릿속에 남아있는 것들을 꺼내 보세요."
   - "시작하기" button (disabled/mock — navigation only in Phase 3)
   - Version number footer
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.5 Implement `DumpInputScreen` static UI
+- [x] 3.5 Implement `DumpInputScreen` static UI
   - Title: "오늘 남은 것들"
   - `TextField` with placeholder "생각, 걱정, 할 일... 하나씩 적어보세요"
   - Add button (and Enter key) — appends item to local mock list and clears input
@@ -241,20 +241,20 @@ _(empty — start a task to populate this section)_
   - "Next: Classify" button — enabled only when at least one item exists
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.6 Implement `ClassificationScreen` static UI (one-at-a-time layout)
+- [x] 3.6 Implement `ClassificationScreen` static UI (one-at-a-time layout)
   - Shows one item card at the top with mock item text
   - Progress indicator: "N / M 분류됨"
   - 7 category buttons each showing Korean label and short description per `docs/01_DESKTOP_UX_SPEC.md` table
   - Tapping a category advances to the next mock item; completes to "Next" when all done
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.7 Implement `FirstActionScreen` static UI
+- [x] 3.7 Implement `FirstActionScreen` static UI
   - Prompt: "내일 가장 먼저 할 일 하나를 고르세요."
   - List of mock eligible items (NOW/TOMORROW/THIS_WEEK only) with selectable radio/highlight
   - "Next" button enabled after selection; "Skip" option
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.8 Implement `EntrustedSummaryScreen` static UI
+- [x] 3.8 Implement `EntrustedSummaryScreen` static UI
   - Title: "오늘의 덜어냄"
   - Mock items grouped by category (flat lists per category, collapsible optional)
   - First Action highlighted at top with accent color or star
@@ -262,14 +262,14 @@ _(empty — start a task to populate this section)_
   - "완료하기" button
   - _Requirements: 4.1, 4.2_
 
-- [ ] 3.9 Implement `CompletionScreen` static UI
+- [x] 3.9 Implement `CompletionScreen` static UI
   - Large centered message: "오늘은 여기까지 해도 됩니다."
   - Small subtitle: "수고하셨어요."
   - Small bottom-aligned close button: "닫기"
   - No CTAs, no navigation prompts, no notifications
   - _Requirements: 4.1, 4.4_
 
-- [ ] 3.10 Wire linear navigation across all 6 screens
+- [x] 3.10 Wire linear navigation across all 6 screens
   - Configure `go_router` (or Navigator) routes: StartScreen → DumpInputScreen → ClassificationScreen → FirstActionScreen → EntrustedSummaryScreen → CompletionScreen
   - Each screen's primary action button navigates to the next screen
   - "닫기" on CompletionScreen calls `SystemNavigator.pop()` or `exit(0)`
@@ -286,7 +286,7 @@ _(empty — start a task to populate this section)_
     - `CompletionScreen`: main message text, close button; no extra CTAs
   - _Requirements: 4.1, 4.4_
 
-- [ ] 3.12 Phase 3 exit criteria — all 6 screens render; linear navigation flows end-to-end
+- [x] 3.12 Phase 3 exit criteria — all 6 screens render; linear navigation flows end-to-end
   - Run `flutter test`; all widget tests pass
   - Verify all 6 screens navigate in correct order with mock data
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_

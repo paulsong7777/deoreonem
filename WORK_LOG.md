@@ -25,6 +25,40 @@
 
 ---
 
+## 2026-06-10 (session 4)
+
+**Session duration:** ~1.5h
+**Phase:** Phase 3 — Flutter Desktop Shell
+
+### Done
+
+- Created Flutter project at `apps/deoreonem_desktop` (replaced .gitkeep)
+- Configured `pubspec.yaml`: flutter_riverpod, dio, go_router
+- Windows runner: title "덜어냄", 480×680px, non-resizable
+- Created `lib/theme.dart` with warm color palette from UX spec
+- Created `lib/router.dart` with go_router linear navigation (6 routes)
+- Updated `lib/main.dart` with ProviderScope + MaterialApp.router
+- Implemented all 6 screens with static mock data:
+  - StartScreen, DumpInputScreen, ClassificationScreen
+  - FirstActionScreen, EntrustedSummaryScreen, CompletionScreen
+- Korean UI copy matches `docs/01_DESKTOP_UX_SPEC.md`
+- Created 6 widget test files (7 test cases total)
+- `flutter test` → 7 tests passed ✅
+
+### Next
+
+- Begin Phase 4: Wire Dio API client + Riverpod providers to real backend
+- Create Dart model classes (SessionModel, ItemModel, SummaryModel)
+- Replace mock data with real API responses
+
+### Blockers / Notes
+
+- Windows native build not verified (Visual Studio C++ toolchain needed)
+- No real API calls in Phase 3 — all mock/local state
+- dio and flutter_riverpod dependencies added but unused until Phase 4
+
+---
+
 ## 2026-06-10 (session 3)
 
 **Session duration:** ~2h

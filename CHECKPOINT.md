@@ -193,3 +193,50 @@
 ### What Comes Next
 
 - **Phase 3:** Flutter desktop shell — 6 screens with static UI, linear navigation
+
+---
+
+## Checkpoint: Phase 3 — Flutter Desktop Shell
+
+**Date:** 2026-06-10
+**Status:** ✅ Complete
+
+### What Was Completed
+
+- Flutter project created at `apps/deoreonem_desktop` (Flutter 3.41.1, Dart 3.11.0)
+- Windows desktop target configured: 480×680px, non-resizable, title "덜어냄"
+- Dependencies: `flutter_riverpod ^2.6.1`, `dio ^5.7.0`, `go_router ^14.6.2`
+- App theme with warm color palette from `docs/01_DESKTOP_UX_SPEC.md`
+- GoRouter linear navigation: `/` → `/dump` → `/classify` → `/first-action` → `/summary` → `/complete`
+- All 6 screens implemented with static mock data and Korean UI copy:
+  - StartScreen: app name, subtitle, start button, version footer
+  - DumpInputScreen: text input, add/remove local items, disabled next when empty
+  - ClassificationScreen: one-at-a-time layout, 7 category buttons, progress indicator
+  - FirstActionScreen: eligible items with radio selection, skip option
+  - EntrustedSummaryScreen: items grouped by category, first action highlight, total count
+  - CompletionScreen: "오늘은 여기까지 해도 됩니다." + close button, no extra CTAs
+- Widget tests: 7 tests across 6 screen test files — ALL PASS
+
+### Key Decisions Made
+
+- **go_router** for navigation — simplest option for a linear flow without deep linking
+- **One-at-a-time classification** (Option A from UX spec) — keeps the 480px window uncluttered
+- **No `window_manager` dependency** — used `windows/runner/main.cpp` modifications for window size and title
+- **Mock data hardcoded in screens** — no Riverpod state management or API calls until Phase 4
+- **`SystemNavigator.pop()`** for close button — simplest app exit for desktop
+
+### Current Project State
+
+- Phase 3 complete: 6 screens render with static UI, linear navigation works, tests pass
+- No real API integration yet (Phase 4)
+- Backend (Phase 2) remains unchanged and operational
+
+### Known Issues / Open Questions
+
+- Windows native build not verified (requires Visual Studio C++ toolchain installed)
+- Dart model classes and API client deferred to Phase 4
+- Loading states and error handling deferred to Phase 4
+
+### What Comes Next
+
+- **Phase 4:** Wire Flutter client to live REST API via Dio + Riverpod providers
