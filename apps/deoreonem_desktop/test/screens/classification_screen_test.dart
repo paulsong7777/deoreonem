@@ -90,4 +90,13 @@ void main() {
     // Item card with content
     expect(find.byType(Card), findsWidgets);
   });
+
+  testWidgets('ClassificationScreen does not crash with empty items list',
+      (tester) async {
+    await tester.pumpWidget(buildWidget([]));
+
+    // Should show empty state message, not crash
+    expect(find.text('분류할 항목이 없습니다.'), findsOneWidget);
+    expect(find.text('돌아가기'), findsOneWidget);
+  });
 }

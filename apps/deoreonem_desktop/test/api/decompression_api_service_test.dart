@@ -65,7 +65,7 @@ void main() {
 
     test('updateCategory returns updated ItemModel', () async {
       dioAdapter.onPatch(
-        '/decompression-sessions/session-1/items/item-1/category',
+        '/decompression-items/item-1/category',
         (server) => server.reply(200, {
           'success': true,
           'data': {
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('setFirstAction completes without error', () async {
-      dioAdapter.onPut(
+      dioAdapter.onPatch(
         '/decompression-sessions/session-1/first-action',
         (server) => server.reply(200, {
           'success': true,

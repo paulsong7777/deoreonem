@@ -15,7 +15,6 @@ class ClassificationScreen extends ConsumerStatefulWidget {
 }
 
 class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
-  int _currentIndex = 0;
   bool _isClassifying = false;
 
   static const List<Map<String, String>> categoryButtons = [
@@ -29,12 +28,15 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
   ];
 
   Future<void> _classify(String category, List<ItemModel> items) async {
-    if (_isClassifying) return;
+    if (_isClassifying || items.isEmpty) return;
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
-    final item = items[_currentIndex];
+    final unclassified = items.where((i) => i.category == null).toList();
+    if (unclassified.isEmpty) return;
+
+    final item = unclassified.first;
     setState(() => _isClassifying = true);
 
     await ref
@@ -44,13 +46,6 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     if (mounted) {
       setState(() {
         _isClassifying = false;
-        // Move to next unclassified item
-        final allItems = ref.read(itemsProvider).valueOrNull ?? [];
-        final nextUnclassified =
-            allItems.indexWhere((i) => i.category == null);
-        if (nextUnclassified >= 0) {
-          _currentIndex = nextUnclassified;
-        }
       });
     }
   }
@@ -69,6 +64,26 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
       currentItem = unclassified.first;
     } else if (items.isNotEmpty) {
       currentItem = items.last;
+    }
+
+    if (items.isEmpty) {
+      return Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('분류할 항목이 없습니다.',
+                  style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/dump'),
+                child: const Text('돌아가기'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(

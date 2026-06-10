@@ -35,14 +35,14 @@ class DecompressionApiService {
   Future<ItemModel> updateCategory(
       String sessionId, String itemId, String category) async {
     final response = await _request(() => _dio.patch(
-          '/decompression-sessions/$sessionId/items/$itemId/category',
+          '/decompression-items/$itemId/category',
           data: {'category': category},
         ));
     return ItemModel.fromJson(response['data']);
   }
 
   Future<void> setFirstAction(String sessionId, String itemId) async {
-    await _request(() => _dio.put(
+    await _request(() => _dio.patch(
           '/decompression-sessions/$sessionId/first-action',
           data: {'itemId': itemId},
         ));

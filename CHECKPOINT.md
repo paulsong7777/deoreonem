@@ -285,8 +285,9 @@
 - **PostgreSQL not running** — RESOLVED: Docker container running, Flyway migrations applied
 - **Windows build** — FIXED: Korean title → Unicode escapes; `flutter build windows` succeeds
 - **MyBatis UUID TypeHandler** — FIXED: custom `UuidTypeHandler` registered; bootRun succeeds
+- **ClassificationScreen crash** — FIXED: API path mismatch + empty-list guard added
 - `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
-- Full live verification achieved: backend starts, health returns 200, Flutter builds
+- Full live verification achieved: backend starts, health returns 200, Flutter builds and runs
 
 ### What Comes Next
 

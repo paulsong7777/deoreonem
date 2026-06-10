@@ -67,9 +67,11 @@
   - `./gradlew.bat bootRun --no-daemon`: started on port 8080 in 5.6s ✅
   - `GET /api/v1/health`: 200 `{"status":"UP","service":"deoreonem-api","version":"0.1.0"}` ✅
   - Visual Studio: Installed; `flutter build windows` succeeds ✅
-  - `flutter test`: 34 tests pass ✅
+  - `flutter test`: 35 tests pass ✅
   - `flutter build windows`: BUILD SUCCESSFUL ✅
+  - ClassificationScreen crash: FIXED (API path mismatch + empty-list guard) ✅
   - Windows title encoding: Fixed (Unicode escapes) ✅
+  - Live E2E: backend health verified, Windows app launches, classification fix applied
 
 ---
 
