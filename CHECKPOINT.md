@@ -282,10 +282,10 @@
 
 ### Known Issues / Open Questions
 
-- Windows native build not verified (requires Visual Studio C++ workload)
-- Manual end-to-end test pending: backend must be running + app must be built
+- **PostgreSQL not running** — Docker Desktop not started; `localhost:5432` not reachable
+- **Windows build** — FIXED: Korean title in `main.cpp` replaced with Unicode escapes; `flutter build windows` now succeeds
 - `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
-- `updateCategory` path: Flutter uses `/decompression-items/{itemId}/category` per Phase 2 controller
+- Manual end-to-end verification requires PostgreSQL running + `flutter run -d windows`
 
 ### What Comes Next
 

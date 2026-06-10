@@ -59,6 +59,14 @@
 - Windows native build not verified (needs Visual Studio C++ Desktop workload)
 - Manual e2e test needs: PostgreSQL Docker + Spring Boot running + Flutter Windows build
 - `getReview` endpoint not wired to UI — no "next day review" screen in MVP 0.1
+- **2026-06-10 verification attempt:**
+  - PostgreSQL: NOT running (Docker Desktop not started, port 5432 not reachable)
+  - Visual Studio: Installed after initial check; `flutter build windows` succeeds ✅
+  - `flutter test`: 34 tests pass ✅
+  - `flutter build windows`: BUILD SUCCESSFUL (`deoreonem_desktop.exe` produced) ✅
+  - Windows title encoding: Fixed (Korean literal → Unicode escapes `\uB35C\uC5B4\uB0C4`)
+  - `flutter run -d windows`: BLOCKED (no running PostgreSQL for live API test)
+  - Backend `bootRun`: BLOCKED (no PostgreSQL)
 
 ---
 
