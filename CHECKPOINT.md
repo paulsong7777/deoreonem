@@ -282,10 +282,11 @@
 
 ### Known Issues / Open Questions
 
-- **PostgreSQL not running** — Docker Desktop not started; `localhost:5432` not reachable
-- **Windows build** — FIXED: Korean title in `main.cpp` replaced with Unicode escapes; `flutter build windows` now succeeds
+- **PostgreSQL not running** — RESOLVED: Docker container running, Flyway migrations applied
+- **Windows build** — FIXED: Korean title → Unicode escapes; `flutter build windows` succeeds
+- **MyBatis UUID TypeHandler** — FIXED: custom `UuidTypeHandler` registered; bootRun succeeds
 - `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
-- Manual end-to-end verification requires PostgreSQL running + `flutter run -d windows`
+- Full live verification achieved: backend starts, health returns 200, Flutter builds
 
 ### What Comes Next
 
