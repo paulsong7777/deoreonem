@@ -5,6 +5,7 @@ import 'screens/classification_screen.dart';
 import 'screens/first_action_screen.dart';
 import 'screens/entrusted_summary_screen.dart';
 import 'screens/completion_screen.dart';
+import 'screens/review_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -24,5 +25,8 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/complete',
         builder: (context, state) => const CompletionScreen()),
+    GoRoute(
+        path: '/review',
+        builder: (context, state) => const ReviewScreen()),
   ],
 );

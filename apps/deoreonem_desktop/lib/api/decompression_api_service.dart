@@ -59,6 +59,15 @@ class DecompressionApiService {
     return SummaryModel.fromJson(response['data']);
   }
 
+  Future<List<ItemModel>> getReview(String sessionId) async {
+    final response = await _request(
+        () => _dio.get('/decompression-sessions/$sessionId/review'));
+    final items = (response['data']['items'] as List)
+        .map((e) => ItemModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return items;
+  }
+
   Future<Map<String, dynamic>> _request(
       Future<Response> Function() call) async {
     try {

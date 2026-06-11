@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../providers/session_provider.dart';
 import '../providers/summary_provider.dart';
 import '../providers/api_provider.dart';
+import '../providers/local_storage_provider.dart';
 
 class EntrustedSummaryScreen extends ConsumerStatefulWidget {
   const EntrustedSummaryScreen({super.key});
@@ -46,6 +47,10 @@ class _EntrustedSummaryScreenState
     setState(() => _isCompleting = true);
     try {
       await ref.read(apiServiceProvider).completeSession(session.sessionId);
+      await ref.read(localStorageProvider).saveLastCompletedSession(
+            session.sessionId,
+            DateTime.now(),
+          );
       if (mounted) context.go('/complete');
     } catch (e) {
       if (mounted) {

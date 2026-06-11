@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
+import '../providers/local_storage_provider.dart';
+import '../theme.dart';
 
 class StartScreen extends ConsumerWidget {
   const StartScreen({super.key});
@@ -12,6 +14,9 @@ class StartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionState = ref.watch(sessionProvider);
     final isLoading = sessionState is AsyncLoading;
+
+    final storage = ref.watch(localStorageProvider);
+    final lastSession = storage.getLastCompletedSession();
 
     ref.listen<AsyncValue>(sessionProvider, (prev, next) {
       next.whenOrNull(
@@ -74,9 +79,24 @@ class StartScreen extends ConsumerWidget {
                       )
                     : const Text('시작하기'),
               ),
+              if (lastSession != null) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => context.go('/review'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.secondaryText,
+                    minimumSize: const Size(double.infinity, 48),
+                    side: const BorderSide(color: AppTheme.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('어제 맡긴 것 보기'),
+                ),
+              ],
               const Spacer(),
               Text(
-                'v0.1.0',
+                'v0.2.0',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
