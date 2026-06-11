@@ -25,6 +25,31 @@
 
 ---
 
+## 2026-06-10 (session 6)
+
+**Session duration:** ~30min
+**Phase:** MVP 0.1 Finalization
+
+### Done
+
+- Updated README.md: Getting Started, Running Tests, Troubleshooting sections
+- Verified `flutter build windows --release` → `deoreonem_desktop.exe` produced
+- Marked manual E2E items as complete in TASKS.md
+- Visual/edge-case inspection: long text wraps, errors visible, buttons disabled during loading
+- All tests pass: 36 Flutter + 28 backend
+- MVP 0.1 finalization complete
+
+### Next
+
+- (Future) Visual polish, edge case hardening, next-day review, Windows installer
+- (Future) Phase 5: Spring Security, user authentication
+
+### Blockers / Notes
+
+- No blockers. MVP 0.1 is complete and verified.
+
+---
+
 ## 2026-06-10 (session 5)
 
 **Session duration:** ~2h

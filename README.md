@@ -125,6 +125,96 @@ deoreonem/
 
 ## Status
 
-> **Current phase: Phase 0 — Documentation & Scaffolding**
+> **Current phase: MVP 0.1 — Live and verified**
+
+Full end-to-end flow verified: Start → Dump → Classify → First Action → Summary → Complete → Close.
 
 See `TASKS.md` for current task status and `CHECKPOINT.md` for milestone records.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+| Tool | Version | Purpose |
+|---|---|---|
+| Java | 21+ | Spring Boot backend |
+| Flutter | 3.41+ | Desktop client |
+| Docker | any | PostgreSQL database |
+| Visual Studio | 2022+ with "Desktop development with C++" | Flutter Windows build |
+
+### 1. Start PostgreSQL
+
+```bash
+docker run -d -p 5432:5432 \
+  -e POSTGRES_DB=deoreonem \
+  -e POSTGRES_USER=deoreonem \
+  -e POSTGRES_PASSWORD=deoreonem \
+  --name deoreonem-db \
+  postgres:15
+```
+
+### 2. Start the Backend
+
+```bash
+cd server/deoreonem_api
+./gradlew.bat bootRun --no-daemon
+```
+
+Verify: `curl http://localhost:8080/api/v1/health` → `{"status":"UP","service":"deoreonem-api","version":"0.1.0"}`
+
+Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+### 3. Run the Flutter Desktop App
+
+```bash
+cd apps/deoreonem_desktop
+flutter run -d windows
+```
+
+### 4. Run from Release Build
+
+```bash
+cd apps/deoreonem_desktop
+flutter build windows --release
+```
+
+The executable is at: `build/windows/x64/runner/Release/deoreonem_desktop.exe`
+
+You can copy the entire `Release/` folder to another machine and run `deoreonem_desktop.exe` directly. The backend must be running at `http://localhost:8080`.
+
+---
+
+## Running Tests
+
+### Backend Tests
+
+```bash
+cd server/deoreonem_api
+./gradlew.bat test --no-daemon
+```
+
+28 tests: service unit tests + controller tests (no database required for tests).
+
+### Flutter Tests
+
+```bash
+cd apps/deoreonem_desktop
+flutter test
+```
+
+36 tests: model serialization + API service + providers + widget tests (all mocked, no network required).
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| `Connection refused: localhost:5432` | Start the PostgreSQL Docker container |
+| `flutter run` fails with C4819/C2001 error | Window title uses Unicode escapes — ensure `main.cpp` is UTF-8 |
+| MyBatis UUID type handler error | `UuidTypeHandler` is registered in `application.yml` via `type-handlers-package` |
+| `SystemNavigator.pop()` doesn't close app | CompletionScreen uses `dart:io exit(0)` for Windows |
+| Flutter `flutter doctor` shows Visual Studio missing | Install "Desktop development with C++" workload |
+| Backend Flyway error on fresh DB | Ensure PostgreSQL database `deoreonem` exists; Flyway auto-applies V1-V3 |

@@ -298,3 +298,40 @@
 - Edge case handling (empty session, server errors)
 - Windows distributable build
 - README update with full setup instructions
+
+---
+
+## Checkpoint: MVP 0.1 — Finalization
+
+**Date:** 2026-06-10
+**Status:** ✅ Complete
+
+### What Was Completed
+
+- README.md updated with full Getting Started guide (prerequisites, PostgreSQL Docker, backend, Flutter run, release build)
+- Running Tests section added to README
+- Troubleshooting table added to README (6 known issues with solutions)
+- `flutter build windows --release` verified: `deoreonem_desktop.exe` produced
+- Release build path documented: `build/windows/x64/runner/Release/`
+- Manual E2E items marked complete in TASKS.md
+- Visual/edge-case inspection:
+  - Long item text (500 chars): wraps within ListTile, no overflow
+  - Error messages: inline messages visible on all screens (SnackBar on Start, Text on Dump/Summary)
+  - Loading: CircularProgressIndicator + disabled buttons during requests
+- All tests pass: 36 Flutter + 28 backend = 64 total
+
+### Current Project State
+
+- MVP 0.1 is complete: fully functional end-to-end
+- Backend: Spring Boot 3.3.5, 7 REST endpoints, PostgreSQL, Flyway migrations
+- Frontend: Flutter Windows desktop, 6 screens, Riverpod + Dio API integration
+- Tested: 64 automated tests + manual live E2E verification
+- Distributable: Release .exe available
+
+### What Comes Next (future, not in MVP 0.1)
+
+- Visual polish pass (spacing, typography fine-tuning)
+- Edge case hardening (specific offline detection on StartScreen)
+- Next-day review feature (uses existing `/review` endpoint)
+- Windows installer/packaging (MSIX or Inno Setup)
+- Spring Security and user authentication (Phase 5)

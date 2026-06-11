@@ -71,7 +71,7 @@ _(empty)_
 - [x] Implement Screen 6: CompletionScreen — closing message, no CTAs
 - [x] Wire navigation flow end-to-end (go_router linear)
 - [x] Widget tests for all 6 screens — 7 tests pass ✅
-- [ ] Manual end-to-end test on Windows — requires Visual Studio build tools
+- [x] Manual end-to-end test on Windows — verified ✅
 
 ### Phase 4 — Polish & MVP Release
 
@@ -90,11 +90,11 @@ _(empty)_
 - [x] Write provider tests (mocked service) ✅
 - [x] Update widget tests with ProviderScope overrides ✅
 - [x] All 34 Flutter tests pass ✅
-- [ ] Manual end-to-end test on Windows with backend running
+- [x] Manual end-to-end test on Windows with backend running — verified ✅
 - [ ] Handle edge cases: empty session, offline, server errors
 - [ ] Visual polish pass on all screens
-- [ ] Update README with setup and run instructions
-- [ ] Verify `flutter build windows` produces clean build
+- [x] Update README with setup and run instructions ✅
+- [x] Verify `flutter build windows` produces clean build ✅
 - [ ] Create distributable Windows package
 
 ---
