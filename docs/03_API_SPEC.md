@@ -127,43 +127,9 @@ Start a new decompression session.
 
 ---
 
-### 4.2 Get Session
+### 4.2 ~~Get Session~~ *(Deferred to post-MVP — see Section 7)*
 
-Retrieve a session and its items, ordered by `sortOrder` ascending.
-
-**GET** `/api/v1/decompression-sessions/{sessionId}`
-
-**Path Parameters:**
-- `sessionId` (string, UUID) — the session identifier
-
-**Response:** `200 OK`
-
-```json
-{
-  "success": true,
-  "data": {
-    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "IN_PROGRESS",
-    "firstActionItemId": null,
-    "createdAt": "2026-06-09T18:30:00Z",
-    "updatedAt": "2026-06-09T18:30:00Z",
-    "items": [
-      {
-        "itemId": "661e8400-e29b-41d4-a716-446655440001",
-        "content": "API 설계 마저 하기",
-        "category": "TOMORROW",
-        "isFirstAction": false,
-        "sortOrder": 1,
-        "createdAt": "2026-06-09T18:31:00Z",
-        "updatedAt": "2026-06-09T18:31:00Z"
-      }
-    ]
-  }
-}
-```
-
-**Errors:**
-- `404 SESSION_NOT_FOUND`
+> **Note:** This endpoint is planned but not implemented in MVP 0.1. The client retrieves session data via the summary endpoint instead.
 
 ---
 
@@ -216,10 +182,9 @@ The item is appended at the next `sortOrder` position.
 
 Assign or change the category of an item.
 
-**PATCH** `/api/v1/decompression-sessions/{sessionId}/items/{itemId}/category`
+**PATCH** `/api/v1/decompression-items/{itemId}/category`
 
 **Path Parameters:**
-- `sessionId` (string, UUID)
 - `itemId` (string, UUID)
 
 **Request Body:**
@@ -254,7 +219,6 @@ Assign or change the category of an item.
 **Errors:**
 - `400 INVALID_CATEGORY`
 - `409 SESSION_ALREADY_COMPLETE`
-- `404 SESSION_NOT_FOUND`
 - `404 ITEM_NOT_FOUND`
 
 ---
@@ -264,7 +228,7 @@ Assign or change the category of an item.
 Designate one item as the First Action for tomorrow.
 Sets `first_action_item_id` on the session. Clears any previously set First Action.
 
-**PUT** `/api/v1/decompression-sessions/{sessionId}/first-action`
+**PATCH** `/api/v1/decompression-sessions/{sessionId}/first-action`
 
 **Path Parameters:**
 - `sessionId` (string, UUID)
@@ -382,15 +346,21 @@ Mark a session as completed. This is a terminal state — no further modificatio
 
 ---
 
-### 4.8 Delete Item
+### 4.8 ~~Delete Item~~ *(Deferred to post-MVP — see Section 7)*
 
-Remove an item from an in-progress session.
+> **Note:** Delete item endpoint is planned but not implemented in MVP 0.1.
 
-**DELETE** `/api/v1/decompression-sessions/{sessionId}/items/{itemId}`
+---
+
+### 4.9 Get Review (Backend Only)
+
+Retrieve all non-DROP items from a session for next-day review.
+This endpoint is implemented in the backend but not wired to the Flutter UI in MVP 0.1.
+
+**GET** `/api/v1/decompression-sessions/{sessionId}/review`
 
 **Path Parameters:**
 - `sessionId` (string, UUID)
-- `itemId` (string, UUID)
 
 **Response:** `200 OK`
 
@@ -398,16 +368,27 @@ Remove an item from an in-progress session.
 {
   "success": true,
   "data": {
-    "deleted": true,
-    "itemId": "661e8400-e29b-41d4-a716-446655440002"
+    "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "items": [
+      {
+        "itemId": "661e8400-e29b-41d4-a716-446655440001",
+        "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "API 설계 마저 하기",
+        "category": "NOW",
+        "isFirstAction": true,
+        "sortOrder": 1,
+        "createdAt": "2026-06-09T18:31:00Z",
+        "updatedAt": "2026-06-09T18:31:00Z"
+      }
+    ]
   }
 }
 ```
 
+**Business Rule:** Items with category `DROP` are excluded from the review response.
+
 **Errors:**
-- `409 SESSION_ALREADY_COMPLETE`
 - `404 SESSION_NOT_FOUND`
-- `404 ITEM_NOT_FOUND`
 
 ---
 
@@ -438,6 +419,8 @@ These endpoints are not part of MVP 0.1 but are listed here for planning:
 
 | Endpoint | Purpose |
 |---|---|
+| `GET /api/v1/decompression-sessions/{id}` | Get session with items (deferred from 4.2) |
+| `DELETE /api/v1/decompression-sessions/{id}/items/{itemId}` | Delete item from session (deferred from 4.8) |
 | `POST /api/v1/auth/register` | User registration |
 | `POST /api/v1/auth/login` | User login, returns JWT |
 | `GET /api/v1/decompression-sessions` | List all sessions for the authenticated user |
