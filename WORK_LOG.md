@@ -74,6 +74,13 @@
   - Live E2E: backend health verified, Windows app launches, classification fix applied
   - CompletionScreen close: FIXED (`SystemNavigator.pop()` → `dart:io exit(0)`) ✅
   - `flutter test`: 36 tests pass ✅
+  - **FINAL: User confirmed full live E2E pass** ✅
+    - PostgreSQL Docker running
+    - Spring Boot backend running
+    - GET /api/v1/health → 200
+    - Flutter Windows app launches
+    - Full flow: Start → Dump → Classify → First Action → Summary → Complete → Close
+    - CompletionScreen "닫기" button closes app window
 
 ---
 

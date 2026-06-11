@@ -289,6 +289,7 @@
 - **CompletionScreen close button** — FIXED: `SystemNavigator.pop()` → `dart:io exit(0)` with injectable callback for tests
 - `getReview` endpoint not wired to UI (no "next day review" screen in MVP 0.1)
 - Full live verification achieved: backend starts, health returns 200, Flutter builds and runs, full flow works
+- **2026-06-10 FINAL VERIFICATION ✅:** Full live E2E confirmed by user — Start → Dump → Classify → First Action → Summary → Complete → Close all working
 
 ### What Comes Next
 
