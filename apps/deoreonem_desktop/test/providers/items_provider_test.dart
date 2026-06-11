@@ -73,15 +73,24 @@ void main() {
       expect(notifier.unclassifiedItems.length, 0);
     });
 
-    test('eligibleForFirstAction returns NOW/TOMORROW/THIS_WEEK items',
-        () async {
+    test('eligibleForFirstAction returns only TOMORROW items', () async {
+      final tomorrowItem = ItemModel(
+        itemId: 'item-tomorrow',
+        sessionId: 'session-1',
+        content: '내일 할 일',
+        category: 'TOMORROW',
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 9),
+        updatedAt: DateTime.utc(2026, 6, 9),
+      );
       final nowItem = ItemModel(
         itemId: 'item-now',
         sessionId: 'session-1',
         content: '지금 할 일',
         category: 'NOW',
         isFirstAction: false,
-        sortOrder: 1,
+        sortOrder: 2,
         createdAt: DateTime.utc(2026, 6, 9),
         updatedAt: DateTime.utc(2026, 6, 9),
       );
@@ -91,21 +100,24 @@ void main() {
         content: '걱정',
         category: 'WORRY_ONLY',
         isFirstAction: false,
-        sortOrder: 2,
+        sortOrder: 3,
         createdAt: DateTime.utc(2026, 6, 9),
         updatedAt: DateTime.utc(2026, 6, 9),
       );
 
+      when(() => mockApi.addItem('session-1', '내일 할 일'))
+          .thenAnswer((_) async => tomorrowItem);
       when(() => mockApi.addItem('session-1', '지금 할 일'))
           .thenAnswer((_) async => nowItem);
       when(() => mockApi.addItem('session-1', '걱정'))
           .thenAnswer((_) async => worryItem);
 
+      await notifier.addItem('session-1', '내일 할 일');
       await notifier.addItem('session-1', '지금 할 일');
       await notifier.addItem('session-1', '걱정');
 
       expect(notifier.eligibleForFirstAction.length, 1);
-      expect(notifier.eligibleForFirstAction.first.content, '지금 할 일');
+      expect(notifier.eligibleForFirstAction.first.content, '내일 할 일');
     });
 
     test('reset clears all items', () async {

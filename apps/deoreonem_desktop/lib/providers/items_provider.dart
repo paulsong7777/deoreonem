@@ -40,10 +40,7 @@ class ItemsNotifier extends StateNotifier<AsyncValue<List<ItemModel>>> {
 
   List<ItemModel> get eligibleForFirstAction =>
       (state.valueOrNull ?? [])
-          .where((i) =>
-              i.category == 'NOW' ||
-              i.category == 'TOMORROW' ||
-              i.category == 'THIS_WEEK')
+          .where((i) => i.category == 'TOMORROW')
           .toList();
 
   void reset() => state = const AsyncValue.data([]);

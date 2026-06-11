@@ -66,7 +66,15 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('오류: $e')),
-                data: (_) => ListView.builder(
+                data: (_) => eligible.isEmpty
+                    ? Center(
+                        child: Text(
+                          '내일로 분류된 항목이 없습니다.\n건너뛰기를 눌러 계속하세요.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : ListView.builder(
                   itemCount: eligible.length,
                   itemBuilder: (context, index) {
                     final isSelected = _selectedIndex == index;

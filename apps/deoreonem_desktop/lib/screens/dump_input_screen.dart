@@ -13,24 +13,59 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   bool _isAdding = false;
+  String? _pendingText;
 
   Future<void> _addItem() async {
+    if (_isAdding) return;
+
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
-    setState(() => _isAdding = true);
+    setState(() {
+      _isAdding = true;
+      _pendingText = text;
+    });
     _controller.clear();
-    await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
-    if (mounted) setState(() => _isAdding = false);
+
+    try {
+      await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
+      if (mounted) {
+        setState(() {
+          _isAdding = false;
+          _pendingText = null;
+        });
+      }
+    } catch (_) {
+      // Restore text on failure so user doesn't lose input
+      if (mounted) {
+        setState(() {
+          _isAdding = false;
+          if (_controller.text.isEmpty && _pendingText != null) {
+            _controller.text = _pendingText!;
+            _controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: _controller.text.length),
+            );
+          }
+          _pendingText = null;
+        });
+      }
+    }
+
+    // Re-focus input for continuous typing
+    if (mounted) {
+      _focusNode.requestFocus();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -54,6 +89,8 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: true,
                     decoration: const InputDecoration(
                       hintText: '생각, 걱정, 할 일... 하나씩 적어보세요',
                     ),
@@ -96,7 +133,9 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: items.isNotEmpty ? () => context.go('/classify') : null,
+              onPressed: items.isNotEmpty && !_isAdding
+                  ? () => context.go('/classify')
+                  : null,
               child: const Text('분류하기'),
             ),
           ],

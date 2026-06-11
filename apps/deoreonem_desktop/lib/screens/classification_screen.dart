@@ -39,14 +39,25 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     final item = unclassified.first;
     setState(() => _isClassifying = true);
 
-    await ref
-        .read(itemsProvider.notifier)
-        .updateCategory(session.sessionId, item.itemId, category);
+    try {
+      await ref
+          .read(itemsProvider.notifier)
+          .updateCategory(session.sessionId, item.itemId, category);
 
-    if (mounted) {
-      setState(() {
-        _isClassifying = false;
-      });
+      if (mounted) {
+        setState(() => _isClassifying = false);
+
+        // Auto-navigate if this was the last item
+        final allItems = ref.read(itemsProvider).valueOrNull ?? [];
+        final remaining = allItems.where((i) => i.category == null).toList();
+        if (remaining.isEmpty && allItems.isNotEmpty) {
+          context.go('/first-action');
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isClassifying = false);
+      }
     }
   }
 
