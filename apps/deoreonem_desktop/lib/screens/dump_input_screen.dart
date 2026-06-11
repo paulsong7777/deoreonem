@@ -12,13 +12,27 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 }
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
-  final _controller = TextEditingController();
-  final _focusNode = FocusNode();
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
   bool _isAdding = false;
-  String? _pendingText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    // Request focus on first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
 
   Future<void> _addItem() async {
     if (_isAdding) return;
+
+    // Guard against Korean IME composing state
+    final composing = _controller.value.composing;
+    if (composing.isValid && !composing.isCollapsed) return;
 
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -26,40 +40,35 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
-    setState(() {
-      _isAdding = true;
-      _pendingText = text;
-    });
-    _controller.clear();
+    setState(() => _isAdding = true);
 
     try {
       await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
       if (mounted) {
-        setState(() {
-          _isAdding = false;
-          _pendingText = null;
-        });
+        // Clear only after success
+        _controller.clear();
+        setState(() => _isAdding = false);
+        _restoreFocus();
       }
     } catch (_) {
-      // Restore text on failure so user doesn't lose input
+      // Keep text on failure — do not clear
       if (mounted) {
-        setState(() {
-          _isAdding = false;
-          if (_controller.text.isEmpty && _pendingText != null) {
-            _controller.text = _pendingText!;
-            _controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: _controller.text.length),
-            );
-          }
-          _pendingText = null;
-        });
+        setState(() => _isAdding = false);
+        _restoreFocus();
       }
     }
+  }
 
-    // Re-focus input for continuous typing
-    if (mounted) {
-      _focusNode.requestFocus();
-    }
+  void _restoreFocus() {
+    // Use post-frame callback + short delay to ensure focus survives widget rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted && !_focusNode.hasFocus) {
+          FocusScope.of(context).requestFocus(_focusNode);
+        }
+      });
+    });
   }
 
   @override
@@ -90,12 +99,11 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    autofocus: true,
                     decoration: const InputDecoration(
                       hintText: '생각, 걱정, 할 일... 하나씩 적어보세요',
                     ),
                     onSubmitted: (_) => _addItem(),
-                    enabled: !_isAdding,
+                    // Never disable — keeps widget tree stable for IME
                   ),
                 ),
                 const SizedBox(width: 8),

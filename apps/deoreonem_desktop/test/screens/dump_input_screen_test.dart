@@ -75,4 +75,34 @@ void main() {
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
     expect(button.onPressed, isNotNull);
   });
+
+  testWidgets('TextField is never disabled during add operation',
+      (tester) async {
+    when(() => mockApi.addItem('session-1', '항목'))
+        .thenAnswer((_) async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return ItemModel(
+        itemId: 'item-1',
+        sessionId: 'session-1',
+        content: '항목',
+        category: null,
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 9),
+        updatedAt: DateTime.utc(2026, 6, 9),
+      );
+    });
+
+    await tester.pumpWidget(buildWidget());
+
+    await tester.enterText(find.byType(TextField), '항목');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    // TextField should still be enabled during the add
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.enabled, isNot(false));
+
+    await tester.pumpAndSettle();
+  });
 }
