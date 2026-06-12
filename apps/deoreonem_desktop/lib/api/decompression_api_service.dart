@@ -5,12 +5,15 @@ import '../models/item_model.dart';
 import '../models/summary_model.dart';
 
 class DecompressionApiService {
+  static const _defaultBaseUrl = 'http://localhost:8080/api/v1';
+  static const _envBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: _defaultBaseUrl);
+
   final Dio _dio;
 
   DecompressionApiService({Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
-              baseUrl: 'http://localhost:8080/api/v1',
+              baseUrl: _envBaseUrl,
               connectTimeout: const Duration(seconds: 10),
               receiveTimeout: const Duration(seconds: 30),
               contentType: 'application/json',
