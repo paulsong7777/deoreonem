@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,9 +19,10 @@ class ReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
-  List<ItemModel>? _items;
+  List<ItemModel> _items = [];
   bool _isLoading = true;
   String? _error;
+  final Set<String> _removingIds = {};
 
   static const Map<String, String> categoryLabels = {
     'TOMORROW': '내일',
@@ -100,6 +103,33 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
+  Future<void> _letGo(ItemModel item) async {
+    if (_removingIds.contains(item.itemId)) return;
+
+    setState(() => _removingIds.add(item.itemId));
+    try {
+      final api = ref.read(apiServiceProvider);
+      await api.updateCategory(item.sessionId, item.itemId, 'DROP');
+      if (mounted) {
+        setState(() {
+          _items.removeWhere((i) => i.itemId == item.itemId);
+          _removingIds.remove(item.itemId);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _removingIds.remove(item.itemId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')),
+        );
+      }
+    }
+  }
+
+  void _closeApp() {
+    exit(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -118,7 +148,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _startNewSession,
-                child: const Text('오늘 새로 덜어내기'),
+                child: const Text('새로 비우기'),
               ),
             ],
           ),
@@ -126,10 +156,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       );
     }
 
-    final items = (_items ?? [])
+    final items = _items
         .where((i) =>
             i.category != null && _visibleCategories.contains(i.category))
         .toList();
+
     if (items.isEmpty) {
       return Scaffold(
         body: Center(
@@ -141,7 +172,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _startNewSession,
-                child: const Text('오늘 새로 덜어내기'),
+                child: const Text('새로 비우기'),
               ),
             ],
           ),
@@ -162,11 +193,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('맡겨둔 것들',
+            Text('맡겨둔 것들이 있습니다',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '총 ${items.length}개의 항목',
+              '지난번 덜어냄에서 이런 생각들을 잠시 맡겨두고 갔어요.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 됩니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -194,10 +230,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                               title: Text(item.content,
                                   style: const TextStyle(fontSize: 14)),
                               dense: true,
-                              leading: item.isFirstAction
-                                  ? const Icon(Icons.star,
-                                      color: AppTheme.accent, size: 18)
-                                  : null,
+                              trailing: _removingIds.contains(item.itemId)
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                  : TextButton(
+                                      onPressed: () => _letGo(item),
+                                      child: const Text(
+                                        '이제 괜찮아요',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.secondaryText,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           )),
                     ],
@@ -207,8 +256,25 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _startNewSession,
-              child: const Text('오늘 새로 덜어내기'),
+              onPressed: _isStarting ? null : _startNewSession,
+              child: _isStarting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('새로 비우기'),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: _closeApp,
+                child: const Text(
+                  '그대로 닫기',
+                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+                ),
+              ),
             ),
           ],
         ),

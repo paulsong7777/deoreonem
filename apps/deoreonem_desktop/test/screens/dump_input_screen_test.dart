@@ -50,59 +50,81 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('DumpInputScreen enables next button after adding item',
+  testWidgets(
+      'Typing and pressing Enter adds to visible list without API call',
       (tester) async {
-    final testItem = ItemModel(
-      itemId: 'item-1',
-      sessionId: 'session-1',
-      content: '테스트 항목',
-      category: null,
-      isFirstAction: false,
-      sortOrder: 1,
-      createdAt: DateTime.utc(2026, 6, 9),
-      updatedAt: DateTime.utc(2026, 6, 9),
-    );
-
-    when(() => mockApi.addItem('session-1', '테스트 항목'))
-        .thenAnswer((_) async => testItem);
-
     await tester.pumpWidget(buildWidget());
 
     await tester.enterText(find.byType(TextField), '테스트 항목');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
+    // Item should be visible in the list
+    expect(find.text('테스트 항목'), findsOneWidget);
+    // Button should be enabled
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
     expect(button.onPressed, isNotNull);
+    // API should NOT have been called
+    verifyNever(() => mockApi.addItem(any(), any()));
   });
 
-  testWidgets('TextField is never disabled during add operation',
+  testWidgets('Navigating to classify saves all drafts via API',
       (tester) async {
-    when(() => mockApi.addItem('session-1', '항목'))
-        .thenAnswer((_) async {
-      await Future.delayed(const Duration(milliseconds: 100));
-      return ItemModel(
-        itemId: 'item-1',
-        sessionId: 'session-1',
-        content: '항목',
-        category: null,
-        isFirstAction: false,
-        sortOrder: 1,
-        createdAt: DateTime.utc(2026, 6, 9),
-        updatedAt: DateTime.utc(2026, 6, 9),
-      );
-    });
+    final testItem = ItemModel(
+      itemId: 'item-1',
+      sessionId: 'session-1',
+      content: '항목 하나',
+      category: null,
+      isFirstAction: false,
+      sortOrder: 1,
+      createdAt: DateTime.utc(2026, 6, 9),
+      updatedAt: DateTime.utc(2026, 6, 9),
+    );
+    final testItem2 = ItemModel(
+      itemId: 'item-2',
+      sessionId: 'session-1',
+      content: '항목 둘',
+      category: null,
+      isFirstAction: false,
+      sortOrder: 2,
+      createdAt: DateTime.utc(2026, 6, 9),
+      updatedAt: DateTime.utc(2026, 6, 9),
+    );
 
+    when(() => mockApi.addItem('session-1', '항목 하나'))
+        .thenAnswer((_) async => testItem);
+    when(() => mockApi.addItem('session-1', '항목 둘'))
+        .thenAnswer((_) async => testItem2);
+
+    await tester.pumpWidget(buildWidget());
+
+    // Add two drafts
+    await tester.enterText(find.byType(TextField), '항목 하나');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), '항목 둘');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    // Tap the classify button
+    await tester.tap(find.text('분류하기'));
+    await tester.pumpAndSettle();
+
+    // Both items should be saved via API
+    verify(() => mockApi.addItem('session-1', '항목 하나')).called(1);
+    verify(() => mockApi.addItem('session-1', '항목 둘')).called(1);
+  });
+
+  testWidgets('TextField is never disabled during operation', (tester) async {
     await tester.pumpWidget(buildWidget());
 
     await tester.enterText(find.byType(TextField), '항목');
     await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // TextField should still be enabled during the add
+    // TextField should still be enabled
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isNot(false));
-
-    await tester.pumpAndSettle();
   });
 }

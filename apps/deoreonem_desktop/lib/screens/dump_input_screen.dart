@@ -15,6 +15,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _isAdding = false;
+  final List<String> _draftItems = [];
 
   @override
   void initState() {
@@ -26,72 +27,60 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     });
   }
 
-  Future<void> _addItem() async {
+  /// Add text to local draft list (no API call)
+  Future<void> _addDraft() async {
     if (_isAdding) return;
-
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+
+    setState(() {
+      _draftItems.add(text);
+      _controller.clear();
+    });
+    _scheduleFocusRestore();
+  }
+
+  /// Save pending input and navigate to classify — batch-saves all drafts to API
+  Future<void> _navigateToClassify() async {
+    // Check if IME is composing — if so, cannot save yet
+    final composing = _controller.value.composing;
+    if (composing.isValid && !composing.isCollapsed) return;
+
+    // Add any remaining typed text to drafts
+    final pending = _controller.text.trim();
+    if (pending.isNotEmpty) {
+      _draftItems.add(pending);
+      _controller.clear();
+    }
+
+    final items = ref.read(itemsProvider).valueOrNull ?? [];
+    if (_draftItems.isEmpty && items.isEmpty) return;
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
+    // Batch-save all draft items to API
     setState(() => _isAdding = true);
-
     try {
-      await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
+      for (final text in _draftItems) {
+        await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
+      }
       if (mounted) {
-        _controller.clear();
+        _draftItems.clear();
         setState(() => _isAdding = false);
+        context.go('/classify');
       }
     } catch (_) {
       if (mounted) {
         setState(() => _isAdding = false);
+        // Stay on screen — error shown
       }
-    }
-
-    // Always restore focus after any add attempt
-    _scheduleFocusRestore();
-  }
-
-  /// Save pending input and navigate to classify
-  Future<void> _navigateToClassify() async {
-    final pendingText = _controller.text.trim();
-    if (pendingText.isNotEmpty) {
-      // Check if IME is composing — if so, cannot save yet
-      final composing = _controller.value.composing;
-      if (composing.isValid && !composing.isCollapsed) {
-        // Wait for composition to commit — do nothing for now
-        return;
-      }
-
-      final session = ref.read(sessionProvider).valueOrNull;
-      if (session == null) return;
-
-      setState(() => _isAdding = true);
-      try {
-        await ref
-            .read(itemsProvider.notifier)
-            .addItem(session.sessionId, pendingText);
-        if (mounted) {
-          _controller.clear();
-          setState(() => _isAdding = false);
-          context.go('/classify');
-        }
-      } catch (_) {
-        if (mounted) {
-          setState(() => _isAdding = false);
-          // Stay on screen — error shown by provider state
-        }
-      }
-    } else {
-      context.go('/classify');
     }
   }
 
   void _scheduleFocusRestore() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Use a short delay to let Flutter settle after rebuild
         Future.delayed(const Duration(milliseconds: 30), () {
           if (mounted && !_focusNode.hasFocus) {
             _focusNode.requestFocus();
@@ -111,8 +100,14 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   @override
   Widget build(BuildContext context) {
     final itemsState = ref.watch(itemsProvider);
-    final items = itemsState.valueOrNull ?? [];
+    final savedItems = itemsState.valueOrNull ?? [];
     final hasError = itemsState.hasError;
+
+    // Combined list: saved items + draft items
+    final allItems = [
+      ...savedItems.map((i) => i.content),
+      ..._draftItems,
+    ];
 
     return Scaffold(
       body: Padding(
@@ -132,7 +127,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                     decoration: const InputDecoration(
                       hintText: '생각, 걱정, 할 일... 하나씩 적어보세요',
                     ),
-                    onSubmitted: (_) => _addItem(),
+                    onSubmitted: (_) => _addDraft(),
                     textInputAction: TextInputAction.done,
                   ),
                 ),
@@ -144,7 +139,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : IconButton(
-                        onPressed: _addItem,
+                        onPressed: _addDraft,
                         icon: const Icon(Icons.add_circle_outline),
                         tooltip: '추가',
                       ),
@@ -160,11 +155,11 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
-                itemCount: items.length,
+                itemCount: allItems.length,
                 itemBuilder: (context, index) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    title: Text(items[index].content),
+                    title: Text(allItems[index]),
                   ),
                 ),
               ),
@@ -172,7 +167,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed:
-                  items.isNotEmpty && !_isAdding ? _navigateToClassify : null,
+                  allItems.isNotEmpty && !_isAdding ? _navigateToClassify : null,
               child: const Text('분류하기'),
             ),
           ],

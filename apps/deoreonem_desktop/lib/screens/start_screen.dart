@@ -91,12 +91,12 @@ class StartScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('어제 맡긴 것 보기'),
+                  child: const Text('맡겨둔 것 확인하기'),
                 ),
               ],
               const Spacer(),
               Text(
-                'v0.2.0',
+                'v0.3.0',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -109,3 +109,4 @@ class StartScreen extends ConsumerWidget {
     );
   }
 }
+

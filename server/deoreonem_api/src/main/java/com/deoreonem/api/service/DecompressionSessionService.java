@@ -74,7 +74,22 @@ public class DecompressionSessionService {
 
         DecompressionItem item = getItemOrThrow(itemId);
         DecompressionSession session = getSessionOrThrow(item.getSessionId());
-        assertSessionNotCompleted(session);
+
+        // Allow only DROP transition for reviewable items in completed sessions (let-go action)
+        if ("COMPLETED".equals(session.getStatus())) {
+            if (!"DROP".equals(category)) {
+                throw new SessionAlreadyCompleteException(
+                        "Session " + session.getSessionId() + " is already completed.");
+            }
+            // Only allow reviewable categories to transition to DROP
+            String currentCategory = item.getCategory();
+            if (currentCategory == null || "NOW".equals(currentCategory) || "DROP".equals(currentCategory)) {
+                throw new SessionAlreadyCompleteException(
+                        "Session " + session.getSessionId() + " is already completed.");
+            }
+        } else {
+            assertSessionNotCompleted(session);
+        }
 
         itemMapper.updateCategory(itemId, category);
         item.setCategory(category);

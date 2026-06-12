@@ -39,7 +39,7 @@ void main() {
     expect(find.text('덜어냄'), findsOneWidget);
     expect(find.text('오늘 머릿속에 남아있는 것들을 꺼내 보세요.'), findsOneWidget);
     expect(find.text('시작하기'), findsOneWidget);
-    expect(find.text('v0.2.0'), findsOneWidget);
+    expect(find.text('v0.3.0'), findsOneWidget);
   });
 
   testWidgets('review button NOT shown when no saved session', (tester) async {
@@ -58,7 +58,7 @@ void main() {
       ),
     );
 
-    expect(find.text('어제 맡긴 것 보기'), findsNothing);
+    expect(find.text('맡겨둔 것 확인하기'), findsNothing);
   });
 
   testWidgets('review button shown when saved session exists', (tester) async {
@@ -79,6 +79,6 @@ void main() {
       ),
     );
 
-    expect(find.text('어제 맡긴 것 보기'), findsOneWidget);
+    expect(find.text('맡겨둔 것 확인하기'), findsOneWidget);
   });
 }

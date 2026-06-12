@@ -288,6 +288,115 @@ class DecompressionSessionServiceTest {
         assertTrue(response.getItems().stream().noneMatch(i -> "DROP".equals(i.getCategory())));
     }
 
+    @Test
+    @DisplayName("updateCategory on completed session: TOMORROW → DROP succeeds")
+    void updateCategory_completedSession_toDrop_fromTomorrow_succeeds() {
+        DecompressionItem item = createItem(sessionId, itemId, "TOMORROW");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+        ItemResponse response = service.updateCategory(itemId, request);
+
+        assertEquals("DROP", response.getCategory());
+        verify(itemMapper).updateCategory(itemId, "DROP");
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: THIS_WEEK → DROP succeeds")
+    void updateCategory_completedSession_toDrop_fromThisWeek_succeeds() {
+        DecompressionItem item = createItem(sessionId, itemId, "THIS_WEEK");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+        ItemResponse response = service.updateCategory(itemId, request);
+
+        assertEquals("DROP", response.getCategory());
+        verify(itemMapper).updateCategory(itemId, "DROP");
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: WAITING → DROP succeeds")
+    void updateCategory_completedSession_toDrop_fromWaiting_succeeds() {
+        DecompressionItem item = createItem(sessionId, itemId, "WAITING");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+        ItemResponse response = service.updateCategory(itemId, request);
+
+        assertEquals("DROP", response.getCategory());
+        verify(itemMapper).updateCategory(itemId, "DROP");
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: MEMO → DROP succeeds")
+    void updateCategory_completedSession_toDrop_fromMemo_succeeds() {
+        DecompressionItem item = createItem(sessionId, itemId, "MEMO");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+        ItemResponse response = service.updateCategory(itemId, request);
+
+        assertEquals("DROP", response.getCategory());
+        verify(itemMapper).updateCategory(itemId, "DROP");
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: WORRY_ONLY → DROP succeeds")
+    void updateCategory_completedSession_toDrop_fromWorryOnly_succeeds() {
+        DecompressionItem item = createItem(sessionId, itemId, "WORRY_ONLY");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+        ItemResponse response = service.updateCategory(itemId, request);
+
+        assertEquals("DROP", response.getCategory());
+        verify(itemMapper).updateCategory(itemId, "DROP");
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: TOMORROW → NOW throws SessionAlreadyCompleteException")
+    void updateCategory_completedSession_toNow_throwsException() {
+        DecompressionItem item = createItem(sessionId, itemId, "TOMORROW");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("NOW");
+
+        assertThrows(SessionAlreadyCompleteException.class,
+                () -> service.updateCategory(itemId, request));
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: DROP → DROP throws SessionAlreadyCompleteException")
+    void updateCategory_completedSession_dropToDrop_throwsException() {
+        DecompressionItem item = createItem(sessionId, itemId, "DROP");
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+
+        assertThrows(SessionAlreadyCompleteException.class,
+                () -> service.updateCategory(itemId, request));
+    }
+
+    @Test
+    @DisplayName("updateCategory on completed session: null category → DROP throws SessionAlreadyCompleteException")
+    void updateCategory_completedSession_nullToDrop_throwsException() {
+        DecompressionItem item = createItem(sessionId, itemId, null);
+        when(itemMapper.findById(itemId)).thenReturn(item);
+        when(sessionMapper.findById(sessionId)).thenReturn(completedSession);
+
+        UpdateCategoryRequest request = new UpdateCategoryRequest("DROP");
+
+        assertThrows(SessionAlreadyCompleteException.class,
+                () -> service.updateCategory(itemId, request));
+    }
+
     // --- Helper ---
 
     private DecompressionItem createItem(UUID sessionId, UUID itemId, String category) {
