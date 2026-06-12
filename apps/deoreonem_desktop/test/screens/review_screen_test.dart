@@ -21,10 +21,11 @@ void main() {
     mockApi = MockApiService();
   });
 
-  testWidgets('ReviewScreen shows only TOMORROW/THIS_WEEK/WAITING/MEMO/WORRY items', (tester) async {
+  testWidgets(
+      'ReviewScreen shows only TOMORROW/THIS_WEEK/WAITING/MEMO/WORRY items',
+      (tester) async {
     SharedPreferences.setMockInitialValues({
-      'last_completed_session_id': 'session-1',
-      'last_completed_at': '2026-06-10T18:30:00.000Z',
+      'recent_completed_session_ids': ['session-1'],
     });
     final prefs = await SharedPreferences.getInstance();
 
@@ -103,8 +104,7 @@ void main() {
 
   testWidgets('ReviewScreen shows empty state when no items', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'last_completed_session_id': 'session-1',
-      'last_completed_at': '2026-06-10T18:30:00.000Z',
+      'recent_completed_session_ids': ['session-1'],
     });
     final prefs = await SharedPreferences.getInstance();
 
@@ -126,7 +126,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('리뷰할 항목이 없습니다.'), findsOneWidget);
+    expect(find.text('리뷰를 불러오는데 실패했어요.'), findsOneWidget);
     expect(find.text('오늘 새로 덜어내기'), findsOneWidget);
   });
 

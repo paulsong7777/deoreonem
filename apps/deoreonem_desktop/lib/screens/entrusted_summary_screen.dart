@@ -102,17 +102,48 @@ class _EntrustedSummaryScreenState
                 Text('오늘의 덜어냄',
                     style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 8),
-                // First Action highlight
-                if (summary.firstActionItem != null)
-                  Card(
-                    color: AppTheme.accent.withValues(alpha: 0.08),
-                    child: ListTile(
-                      leading: const Icon(Icons.star, color: AppTheme.accent),
-                      title: Text(summary.firstActionItem!.content),
-                      subtitle: const Text('내일 가장 먼저'),
+                // First Action highlight — lighter design
+                if (summary.firstActionItem != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: AppTheme.accent.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.accent.withValues(alpha: 0.04),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            color: AppTheme.accent, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '내일 가장 먼저 볼 것',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.secondaryText,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                summary.firstActionItem!.content,
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 Text(
                   '총 ${summary.totalItems}개를 맡겼습니다.',
                   style: Theme.of(context).textTheme.bodyMedium,

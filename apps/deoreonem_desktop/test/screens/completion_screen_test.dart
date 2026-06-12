@@ -10,7 +10,7 @@ void main() {
     );
 
     expect(find.textContaining('오늘은 여기까지'), findsOneWidget);
-    expect(find.text('수고하셨어요.'), findsOneWidget);
+    expect(find.textContaining('맡겨둔 것들은 다시 꺼내볼 수 있어요'), findsOneWidget);
     expect(find.text('닫기'), findsOneWidget);
     // No extra CTAs
     expect(find.byType(ElevatedButton), findsNothing);

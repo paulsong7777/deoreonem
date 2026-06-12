@@ -38,8 +38,9 @@ class CompletionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                '수고하셨어요.',
+                '맡겨둔 것들은 다시 꺼내볼 수 있어요.\n이제 닫고 쉬어도 됩니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
               ),
               const Spacer(),
               TextButton(

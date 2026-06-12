@@ -63,8 +63,7 @@ void main() {
 
   testWidgets('review button shown when saved session exists', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'last_completed_session_id': 'session-abc',
-      'last_completed_at': '2026-06-10T18:30:00.000Z',
+      'recent_completed_session_ids': ['session-abc'],
     });
     final prefs = await SharedPreferences.getInstance();
 

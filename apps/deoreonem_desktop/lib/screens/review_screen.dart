@@ -31,7 +31,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   /// Categories visible in review (NOW and DROP are excluded)
   static const Set<String> _visibleCategories = {
-    'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
+    'TOMORROW',
+    'THIS_WEEK',
+    'WAITING',
+    'MEMO',
+    'WORRY_ONLY',
   };
 
   @override
@@ -42,8 +46,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Future<void> _loadReview() async {
     final storage = ref.read(localStorageProvider);
-    final last = storage.getLastCompletedSession();
-    if (last == null) {
+    final sessionIds = storage.getRecentCompletedSessionIds();
+    if (sessionIds.isEmpty) {
       setState(() {
         _isLoading = false;
         _error = '저장된 세션이 없습니다.';
@@ -51,22 +55,26 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       return;
     }
 
-    try {
-      final items =
-          await ref.read(apiServiceProvider).getReview(last.sessionId);
-      if (mounted) {
-        setState(() {
-          _items = items;
-          _isLoading = false;
-        });
+    final allItems = <ItemModel>[];
+    final api = ref.read(apiServiceProvider);
+
+    for (final sessionId in sessionIds) {
+      try {
+        final items = await api.getReview(sessionId);
+        allItems.addAll(items);
+      } catch (_) {
+        // Skip sessions that fail to load — continue with others
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _items = allItems;
+        _isLoading = false;
+        if (allItems.isEmpty && sessionIds.isNotEmpty) {
           _error = '리뷰를 불러오는데 실패했어요.';
-        });
-      }
+        }
+      });
     }
   }
 
@@ -119,7 +127,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
 
     final items = (_items ?? [])
-        .where((i) => i.category != null && _visibleCategories.contains(i.category))
+        .where((i) =>
+            i.category != null && _visibleCategories.contains(i.category))
         .toList();
     if (items.isEmpty) {
       return Scaffold(
