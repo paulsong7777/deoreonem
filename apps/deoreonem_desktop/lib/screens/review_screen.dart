@@ -11,6 +11,8 @@ import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
 
+enum _ReviewState { loading, error, items, entrusted, empty }
+
 class ReviewScreen extends ConsumerStatefulWidget {
   const ReviewScreen({super.key});
 
@@ -20,9 +22,10 @@ class ReviewScreen extends ConsumerStatefulWidget {
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   List<ItemModel> _items = [];
-  bool _isLoading = true;
-  String? _error;
+  _ReviewState _state = _ReviewState.loading;
+  String? _errorMessage;
   final Set<String> _removingIds = {};
+  bool _isStarting = false;
 
   static const Map<String, String> categoryLabels = {
     'TOMORROW': '내일',
@@ -32,13 +35,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     'WORRY_ONLY': '걱정만',
   };
 
-  /// Categories visible in review (NOW and DROP are excluded)
   static const Set<String> _visibleCategories = {
-    'TOMORROW',
-    'THIS_WEEK',
-    'WAITING',
-    'MEMO',
-    'WORRY_ONLY',
+    'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
   };
 
   @override
@@ -52,8 +50,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final sessionIds = storage.getRecentCompletedSessionIds();
     if (sessionIds.isEmpty) {
       setState(() {
-        _isLoading = false;
-        _error = '저장된 세션이 없습니다.';
+        _state = _ReviewState.error;
+        _errorMessage = '저장된 세션이 없습니다.';
       });
       return;
     }
@@ -65,23 +63,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       try {
         final items = await api.getReview(sessionId);
         allItems.addAll(items);
-      } catch (_) {
-        // Skip sessions that fail to load — continue with others
-      }
+      } catch (_) {}
     }
 
     if (mounted) {
-      setState(() {
-        _items = allItems;
-        _isLoading = false;
-        if (allItems.isEmpty && sessionIds.isNotEmpty) {
-          _error = '리뷰를 불러오는데 실패했어요.';
-        }
-      });
+      if (allItems.isEmpty) {
+        setState(() {
+          _state = _ReviewState.error;
+          _errorMessage = '리뷰를 불러오는데 실패했어요.';
+        });
+      } else {
+        setState(() {
+          _items = allItems;
+          _state = _ReviewState.items;
+        });
+      }
     }
   }
-
-  bool _isStarting = false;
 
   Future<void> _startNewSession() async {
     if (_isStarting) return;
@@ -114,6 +112,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         setState(() {
           _items.removeWhere((i) => i.itemId == item.itemId);
           _removingIds.remove(item.itemId);
+          // Check if all visible items are gone
+          final visible = _items
+              .where((i) => i.category != null && _visibleCategories.contains(i.category))
+              .toList();
+          if (visible.isEmpty) {
+            _state = _ReviewState.empty;
+          }
         });
       }
     } catch (e) {
@@ -126,61 +131,169 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
+  void _keepEntrusted() {
+    setState(() => _state = _ReviewState.entrusted);
+  }
+
   void _closeApp() {
     exit(0);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    switch (_state) {
+      case _ReviewState.loading:
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    if (_error != null) {
-      return Scaffold(
-        body: Center(
+      case _ReviewState.error:
+        return _buildErrorView(context);
+
+      case _ReviewState.empty:
+        return _buildEmptyView(context);
+
+      case _ReviewState.entrusted:
+        return _buildEntrustedView(context);
+
+      case _ReviewState.items:
+        return _buildItemsView(context);
+    }
+  }
+
+  Widget _buildErrorView(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_errorMessage ?? '', style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _startNewSession,
+              child: const Text('새로 비우기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyView(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8F5),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(48),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
+              const Spacer(),
+              Text(
+                '지금은 맡겨둔 것이 없습니다.',
+                style: Theme.of(context).textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
+              Text(
+                '방금 내려놓은 것들은 다시 붙잡지 않아도 됩니다.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '필요하면 새로 비워내고,\n아니면 그대로 닫아도 괜찮습니다.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const Spacer(),
               ElevatedButton(
-                onPressed: _startNewSession,
-                child: const Text('새로 비우기'),
+                onPressed: _isStarting ? null : _startNewSession,
+                child: _isStarting
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('새로 비우기'),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _closeApp,
+                child: const Text('창 닫기',
+                    style: TextStyle(color: AppTheme.secondaryText, fontSize: 14)),
               ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
+  Widget _buildEntrustedView(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8F5),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(48),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(),
+              Text(
+                '그대로 맡겨두겠습니다.',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w300,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '지금 다시 붙잡지 않아도 됩니다.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '맡겨둔 것들은 여기 그대로 남아 있어요.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '필요할 때 다시 꺼내보면 됩니다.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: _isStarting ? null : _startNewSession,
+                child: _isStarting
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('새로 비우기'),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _closeApp,
+                child: const Text('창 닫기',
+                    style: TextStyle(color: AppTheme.secondaryText, fontSize: 14)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemsView(BuildContext context) {
     final items = _items
-        .where((i) =>
-            i.category != null && _visibleCategories.contains(i.category))
+        .where((i) => i.category != null && _visibleCategories.contains(i.category))
         .toList();
 
     if (items.isEmpty) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('리뷰할 항목이 없습니다.',
-                  style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _startNewSession,
-                child: const Text('새로 비우기'),
-              ),
-            ],
-          ),
-        ),
-      );
+      // Transition to empty state
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _state = _ReviewState.empty);
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Group items by category
     final grouped = <String, List<ItemModel>>{};
     for (final item in items) {
       final cat = item.category!;
@@ -215,14 +328,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          label,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.secondaryText,
-                            fontSize: 13,
-                          ),
-                        ),
+                        child: Text(label,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.secondaryText,
+                                fontSize: 13)),
                       ),
                       ...entry.value.map((item) => Card(
                             margin: const EdgeInsets.only(bottom: 4),
@@ -231,21 +341,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                   style: const TextStyle(fontSize: 14)),
                               dense: true,
                               trailing: _removingIds.contains(item.itemId)
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
+                                  ? const SizedBox(width: 16, height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2))
                                   : TextButton(
                                       onPressed: () => _letGo(item),
-                                      child: const Text(
-                                        '이제 괜찮아요',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.secondaryText,
-                                        ),
-                                      ),
+                                      child: const Text('이제 괜찮아요',
+                                          style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
                                     ),
                             ),
                           )),
@@ -258,22 +359,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             ElevatedButton(
               onPressed: _isStarting ? null : _startNewSession,
               child: _isStarting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
+                  ? const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('새로 비우기'),
             ),
             const SizedBox(height: 8),
             Center(
               child: TextButton(
-                onPressed: _closeApp,
-                child: const Text(
-                  '그대로 닫기',
-                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
-                ),
+                onPressed: _keepEntrusted,
+                child: const Text('그대로 맡겨두기',
+                    style: TextStyle(color: AppTheme.secondaryText, fontSize: 14)),
               ),
             ),
           ],

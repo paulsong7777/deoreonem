@@ -101,7 +101,7 @@ void main() {
     expect(find.text('버린 것'), findsNothing);
     // Bottom actions
     expect(find.text('새로 비우기'), findsOneWidget);
-    expect(find.text('그대로 닫기'), findsOneWidget);
+    expect(find.text('그대로 맡겨두기'), findsOneWidget);
   });
 
   testWidgets('이제 괜찮아요 button removes item from list', (tester) async {
