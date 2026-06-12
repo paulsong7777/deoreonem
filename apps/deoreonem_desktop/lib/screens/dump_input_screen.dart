@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
+import '../theme.dart';
 
 class DumpInputScreen extends ConsumerStatefulWidget {
   const DumpInputScreen({super.key});
@@ -13,87 +14,61 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-  bool _isAdding = false;
-  final List<String> _draftItems = [];
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _focusNode = FocusNode();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
   }
 
-  /// Add text to local draft list (no API call)
-  Future<void> _addDraft() async {
-    if (_isAdding) return;
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _draftItems.add(text);
-      _controller.clear();
-    });
-    _scheduleFocusRestore();
+  /// Parse multiline text into non-empty trimmed lines
+  List<String> _parseLines(String text) {
+    return text
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
   }
 
-  /// Save pending input and navigate to classify — batch-saves all drafts to API
+  /// Save all lines to API and navigate to classify
   Future<void> _navigateToClassify() async {
-    // Check if IME is composing — if so, cannot save yet
-    final composing = _controller.value.composing;
-    if (composing.isValid && !composing.isCollapsed) return;
+    if (_isSaving) return;
 
-    // Add any remaining typed text to drafts
-    final pending = _controller.text.trim();
-    if (pending.isNotEmpty) {
-      _draftItems.add(pending);
-      _controller.clear();
-    }
-
-    final items = ref.read(itemsProvider).valueOrNull ?? [];
-    if (_draftItems.isEmpty && items.isEmpty) return;
+    final lines = _parseLines(_controller.text);
+    final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
+    if (lines.isEmpty && savedItems.isEmpty) return;
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
-    // Batch-save all draft items to API
-    setState(() => _isAdding = true);
+    if (lines.isEmpty) {
+      // Nothing new to save, just navigate
+      context.go('/classify');
+      return;
+    }
+
+    setState(() => _isSaving = true);
     try {
-      for (final text in _draftItems) {
+      for (final text in lines) {
         await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
       }
       if (mounted) {
-        _draftItems.clear();
-        setState(() => _isAdding = false);
+        _controller.clear();
+        setState(() => _isSaving = false);
         context.go('/classify');
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _isAdding = false);
-        // Stay on screen — error shown
+        // Keep text on failure so user doesn't lose input
+        setState(() => _isSaving = false);
       }
     }
-  }
-
-  void _scheduleFocusRestore() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Future.delayed(const Duration(milliseconds: 30), () {
-          if (mounted && !_focusNode.hasFocus) {
-            _focusNode.requestFocus();
-          }
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
@@ -102,12 +77,8 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     final itemsState = ref.watch(itemsProvider);
     final savedItems = itemsState.valueOrNull ?? [];
     final hasError = itemsState.hasError;
-
-    // Combined list: saved items + draft items
-    final allItems = [
-      ...savedItems.map((i) => i.content),
-      ..._draftItems,
-    ];
+    final lines = _parseLines(_controller.text);
+    final hasContent = lines.isNotEmpty || savedItems.isNotEmpty;
 
     return Scaffold(
       body: Padding(
@@ -117,58 +88,78 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
           children: [
             Text('오늘 남은 것들',
                 style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    decoration: const InputDecoration(
-                      hintText: '생각, 걱정, 할 일... 하나씩 적어보세요',
-                    ),
-                    onSubmitted: (_) => _addDraft(),
-                    textInputAction: TextInputAction.done,
+            const SizedBox(height: 8),
+            Text(
+              '머릿속에 남아 있는 걸 줄마다 적어보세요.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '정리되지 않아도 괜찮습니다. 한 줄에 하나씩 내려놓으면 됩니다.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    color: AppTheme.secondaryText,
                   ),
+            ),
+            const SizedBox(height: 16),
+            // Already saved items (from previous interaction or API)
+            if (savedItems.isNotEmpty) ...[
+              ...savedItems.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 14, color: AppTheme.accent),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(item.content,
+                              style: TextStyle(
+                                  fontSize: 13, color: AppTheme.secondaryText)),
+                        ),
+                      ],
+                    ),
+                  )),
+              const Divider(height: 24),
+            ],
+            // Multiline input area
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                autofocus: true,
+                enabled: !_isSaving,
+                decoration: InputDecoration(
+                  hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
+                  hintMaxLines: 10,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppTheme.border),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
                 ),
-                const SizedBox(width: 8),
-                _isAdding
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        onPressed: _addDraft,
-                        icon: const Icon(Icons.add_circle_outline),
-                        tooltip: '추가',
-                      ),
-              ],
+                onChanged: (_) => setState(() {}), // Rebuild to update button state
+              ),
             ),
             if (hasError) ...[
               const SizedBox(height: 8),
               Text(
-                '항목 추가에 실패했어요. 다시 시도해 주세요.',
+                '저장에 실패했어요. 다시 시도해 주세요.',
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: allItems.length,
-                itemBuilder: (context, index) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(allItems[index]),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed:
-                  allItems.isNotEmpty && !_isAdding ? _navigateToClassify : null,
-              child: const Text('분류하기'),
+              onPressed: hasContent && !_isSaving ? _navigateToClassify : null,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('분류하기'),
             ),
           ],
         ),

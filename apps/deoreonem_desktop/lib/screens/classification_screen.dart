@@ -105,9 +105,24 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
           children: [
             Text('분류하기', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
-            Text(
-              '$classifiedCount / ${items.length} 분류됨',
-              style: Theme.of(context).textTheme.bodyMedium,
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => context.go('/dump'),
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
+                      const SizedBox(width: 4),
+                      Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '$classifiedCount / ${items.length} 분류됨',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             // Current item card

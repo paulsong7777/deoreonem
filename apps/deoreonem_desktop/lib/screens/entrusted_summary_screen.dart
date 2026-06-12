@@ -101,6 +101,17 @@ class _EntrustedSummaryScreenState
               children: [
                 Text('오늘의 덜어냄',
                     style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => context.go('/first-action'),
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
+                      const SizedBox(width: 4),
+                      Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
                 // First Action highlight — lighter design
                 if (summary.firstActionItem != null) ...[

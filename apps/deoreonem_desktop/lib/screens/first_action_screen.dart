@@ -55,6 +55,17 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
           children: [
             Text('첫 번째 할 일',
                 style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: () => context.go('/classify'),
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
+                  const SizedBox(width: 4),
+                  Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                ],
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               '내일 가장 먼저 할 일 하나를 고르세요.',
