@@ -22,12 +22,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   String? _error;
 
   static const Map<String, String> categoryLabels = {
-    'NOW': '지금',
     'TOMORROW': '내일',
     'THIS_WEEK': '이번 주',
     'WAITING': '대기 중',
     'MEMO': '메모',
     'WORRY_ONLY': '걱정만',
+  };
+
+  /// Categories visible in review (NOW and DROP are excluded)
+  static const Set<String> _visibleCategories = {
+    'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
   };
 
   @override
@@ -66,11 +70,26 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
-  void _startNewSession() {
-    ref.read(sessionProvider.notifier).reset();
+  bool _isStarting = false;
+
+  Future<void> _startNewSession() async {
+    if (_isStarting) return;
+    setState(() => _isStarting = true);
+
     ref.read(itemsProvider.notifier).reset();
     ref.read(summaryProvider.notifier).reset();
-    context.go('/');
+
+    try {
+      await ref.read(sessionProvider.notifier).createSession();
+      if (mounted) context.go('/dump');
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isStarting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('세션을 시작할 수 없어요. 다시 시도해 주세요.')),
+        );
+      }
+    }
   }
 
   @override
@@ -99,7 +118,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       );
     }
 
-    final items = _items ?? [];
+    final items = (_items ?? [])
+        .where((i) => i.category != null && _visibleCategories.contains(i.category))
+        .toList();
     if (items.isEmpty) {
       return Scaffold(
         body: Center(
@@ -122,7 +143,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     // Group items by category
     final grouped = <String, List<ItemModel>>{};
     for (final item in items) {
-      final cat = item.category ?? 'UNCATEGORIZED';
+      final cat = item.category!;
       grouped.putIfAbsent(cat, () => []).add(item);
     }
 
@@ -132,7 +153,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('어제 맡긴 것들',
+            Text('맡겨둔 것들',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(

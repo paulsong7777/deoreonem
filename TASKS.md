@@ -97,6 +97,14 @@ _(empty)_
 - [x] Verify `flutter build windows` produces clean build ✅
 - [ ] Create distributable Windows package
 
+### MVP 0.3 — Deferred (Review Item Lifecycle)
+
+- [ ] Add DONE category to backend enum/validation (new Flyway migration)
+- [ ] Resolve NOW items before session completion (mini-flow in Summary screen)
+- [ ] Store multiple completed session IDs locally (up to 7)
+- [ ] Review item actions: mark DONE, mark DROP (mutate via updateCategory API)
+- [ ] Windows installer (MSIX or Inno Setup)
+
 ---
 
 ## ✅ Completed
