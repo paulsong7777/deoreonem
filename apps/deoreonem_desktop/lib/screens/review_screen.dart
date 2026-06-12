@@ -28,12 +28,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   bool _isStarting = false;
 
   static const Map<String, String> categoryLabels = {
-    'TOMORROW': '내일',
-    'THIS_WEEK': '이번 주',
-    'WAITING': '대기 중',
-    'MEMO': '메모',
-    'WORRY_ONLY': '걱정만',
+    'TOMORROW': '내일 다시 볼 것',
+    'THIS_WEEK': '이번 주 안에 볼 것',
+    'WAITING': '기다리는 것',
+    'MEMO': '기록만 남긴 것',
+    'WORRY_ONLY': '걱정만 남은 것',
   };
+
+  static const List<String> _categoryOrder = [
+    'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
+  ];
 
   static const Set<String> _visibleCategories = {
     'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
@@ -286,6 +290,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
+  String _entrustedLabel(DateTime createdAt) {
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
+    if (diff.inDays == 0) return '오늘 맡김';
+    if (diff.inDays == 1) return '어제 맡김';
+    if (diff.inDays < 7) return '${diff.inDays}일 전 맡김';
+    return '${createdAt.month}월 ${createdAt.day}일 맡김';
+  }
+
   Widget _buildItemsView(BuildContext context) {
     final items = _items
         .where((i) => i.category != null && _visibleCategories.contains(i.category))
@@ -311,23 +324,26 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('맡겨둔 것들이 있습니다',
+            Text('잠시 맡겨둔 것들',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '지난번 덜어냄에서 이런 생각들을 잠시 맡겨두고 갔어요.',
+              '지난 덜어냄에서 잠시 내려놓은 생각들입니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 4),
             Text(
-              '지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 됩니다.',
+              '지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 괜찮습니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
-                children: grouped.entries.map((entry) {
-                  final label = categoryLabels[entry.key] ?? entry.key;
+                children: _categoryOrder
+                    .where((cat) => grouped.containsKey(cat))
+                    .map((cat) {
+                  final label = categoryLabels[cat] ?? cat;
+                  final groupItems = grouped[cat]!;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -339,11 +355,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                 color: AppTheme.secondaryText,
                                 fontSize: 13)),
                       ),
-                      ...entry.value.map((item) => Card(
+                      ...groupItems.map((item) => Card(
                             margin: const EdgeInsets.only(bottom: 4),
                             child: ListTile(
                               title: Text(item.content,
                                   style: const TextStyle(fontSize: 14)),
+                              subtitle: Text(_entrustedLabel(item.createdAt),
+                                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
                               dense: true,
                               trailing: _removingIds.contains(item.itemId)
                                   ? const SizedBox(width: 16, height: 16,

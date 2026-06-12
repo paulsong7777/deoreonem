@@ -89,16 +89,23 @@ void main() {
     await tester.pumpAndSettle();
 
     // New title
-    expect(find.text('맡겨둔 것들이 있습니다'), findsOneWidget);
+    expect(find.text('잠시 맡겨둔 것들'), findsOneWidget);
     // Subtitle copy
-    expect(find.text('지난번 덜어냄에서 이런 생각들을 잠시 맡겨두고 갔어요.'), findsOneWidget);
-    expect(find.text('지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 됩니다.'), findsOneWidget);
+    expect(find.text('지난 덜어냄에서 잠시 내려놓은 생각들입니다.'), findsOneWidget);
+    expect(find.text('지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 괜찮습니다.'), findsOneWidget);
     // Visible items (TOMORROW + WAITING)
     expect(find.text('보고서 작성하기'), findsOneWidget);
     expect(find.text('기다리는 중'), findsOneWidget);
     // Filtered out (NOW + DROP)
     expect(find.text('이메일 확인'), findsNothing);
     expect(find.text('버린 것'), findsNothing);
+    // Date label (맡김)
+    expect(find.textContaining('맡김'), findsWidgets);
+    // Stable group order: TOMORROW group label appears before WAITING group label
+    final tomorrowLabel = find.text('내일 다시 볼 것');
+    final waitingLabel = find.text('기다리는 것');
+    expect(tomorrowLabel, findsOneWidget);
+    expect(waitingLabel, findsOneWidget);
     // Bottom actions
     expect(find.text('새로 비우기'), findsOneWidget);
     expect(find.text('그대로 두기'), findsOneWidget);

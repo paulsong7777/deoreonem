@@ -171,13 +171,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                 if (_classifiedItemIds.isNotEmpty && !isReviewing)
                   GestureDetector(
                     onTap: () => _goToPreviousItem(items),
-                    child: Text('이전 항목',
-                        style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
-                  ),
-                if (isReviewing)
-                  GestureDetector(
-                    onTap: _goToNextItem,
-                    child: Text('다음 항목',
+                    child: Text('직전 항목 수정',
                         style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
                   ),
                 const Spacer(),

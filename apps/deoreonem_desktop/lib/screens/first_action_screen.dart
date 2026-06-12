@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/api_provider.dart';
+import '../providers/first_action_provider.dart';
 
 class FirstActionScreen extends ConsumerStatefulWidget {
   const FirstActionScreen({super.key});
@@ -22,6 +23,16 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final eligible = ref.read(itemsProvider.notifier).eligibleForFirstAction;
+      // First try to restore from provider (persisted selection)
+      final savedId = ref.read(firstActionSelectedIdProvider);
+      if (savedId != null) {
+        final savedIndex = eligible.indexWhere((i) => i.itemId == savedId);
+        if (savedIndex >= 0) {
+          setState(() => _selectedIndex = savedIndex);
+          return;
+        }
+      }
+      // Fall back to checking existing isFirstAction
       final existingIndex = eligible.indexWhere((i) => i.isFirstAction);
       if (existingIndex >= 0) {
         setState(() => _selectedIndex = existingIndex);
@@ -43,7 +54,10 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
       await ref
           .read(apiServiceProvider)
           .setFirstAction(session.sessionId, item.itemId);
-      if (mounted) context.go('/summary');
+      if (mounted) {
+        ref.read(firstActionSelectedIdProvider.notifier).state = item.itemId;
+        context.go('/summary');
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);

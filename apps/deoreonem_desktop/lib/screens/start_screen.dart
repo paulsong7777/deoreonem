@@ -5,6 +5,7 @@ import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
 import '../providers/local_storage_provider.dart';
+import '../providers/first_action_provider.dart';
 import '../theme.dart';
 
 class StartScreen extends ConsumerWidget {
@@ -68,6 +69,7 @@ class StartScreen extends ConsumerWidget {
                         // Reset state for a fresh session
                         ref.read(itemsProvider.notifier).reset();
                         ref.read(summaryProvider.notifier).reset();
+                        ref.read(firstActionSelectedIdProvider.notifier).state = null;
                         ref.read(sessionProvider.notifier).createSession();
                       },
                 child: isLoading
