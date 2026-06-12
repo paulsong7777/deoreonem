@@ -1,7 +1,7 @@
 # DeoReoNem — Test Distribution Plan
 
 **Version:** 0.3 RC
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-06-12
 
 ---
 
@@ -27,17 +27,28 @@ Sending the Windows .exe ZIP alone does not work unless the API is reachable.
 
 ### B. Remote Backend + Windows ZIP
 
-1. Developer deploys backend to a remote server (e.g., AWS EC2, Railway, Render)
-2. Update `DecompressionApiService` base URL to point to the remote server
-3. Build release: `flutter build windows --release`
-4. ZIP the `build/windows/x64/runner/Release/` folder
-5. Send ZIP to tester
-6. Tester runs `deoreonem_desktop.exe` — connects to remote API
+**Target architecture:**
+```
+Friend's Windows app (deoreonem_desktop.exe)
+    → HTTPS → https://deoreonem-api.scope-works.net/api/v1
+        → Oracle Cloud server: Spring Boot backend
+            → Oracle Cloud server: PostgreSQL
+```
+
+**Setup steps:**
+1. Deploy Spring Boot backend to Oracle Cloud server
+2. Configure HTTPS via `deoreonem-api.scope-works.net`
+3. Update `DecompressionApiService` base URL to `https://deoreonem-api.scope-works.net/api/v1`
+4. Build release: `flutter build windows --release`
+5. ZIP the `build/windows/x64/runner/Release/` folder
+6. Send ZIP to tester
+7. Tester runs `deoreonem_desktop.exe` — connects to remote API
 
 **Constraints:**
-- Requires the remote backend to be accessible (HTTPS recommended)
-- No authentication in MVP 0.3 — anyone with the URL can access
-- PostgreSQL must be provisioned on the remote server
+- No authentication in MVP 0.3 — anyone with the URL can access the API
+- **Do not enter real company, customer, or private information**
+- **Use test sentences only** during friend testing
+- PostgreSQL is provisioned on the same Oracle Cloud server
 
 ### C. Later: Installer / MSIX (Post-MVP 0.3)
 
