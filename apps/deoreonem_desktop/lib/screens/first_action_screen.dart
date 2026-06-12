@@ -17,6 +17,18 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
   int? _selectedIndex;
   bool _isSaving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final eligible = ref.read(itemsProvider.notifier).eligibleForFirstAction;
+      final existingIndex = eligible.indexWhere((i) => i.isFirstAction);
+      if (existingIndex >= 0) {
+        setState(() => _selectedIndex = existingIndex);
+      }
+    });
+  }
+
   Future<void> _setFirstAction() async {
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null || _selectedIndex == null) return;

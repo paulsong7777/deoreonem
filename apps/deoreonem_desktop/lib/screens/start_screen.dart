@@ -16,7 +16,7 @@ class StartScreen extends ConsumerWidget {
     final isLoading = sessionState is AsyncLoading;
 
     final storage = ref.watch(localStorageProvider);
-    final lastSession = storage.getLastCompletedSession();
+    final hasReviewable = storage.reviewableEntrustedCount > 0;
 
     ref.listen<AsyncValue>(sessionProvider, (prev, next) {
       next.whenOrNull(
@@ -79,7 +79,7 @@ class StartScreen extends ConsumerWidget {
                       )
                     : const Text('시작하기'),
               ),
-              if (lastSession != null) ...[
+              if (hasReviewable) ...[
                 const SizedBox(height: 12),
                 OutlinedButton(
                   onPressed: () => context.go('/review'),

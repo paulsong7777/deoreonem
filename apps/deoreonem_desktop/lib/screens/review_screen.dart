@@ -73,6 +73,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           _errorMessage = '리뷰를 불러오는데 실패했어요.';
         });
       } else {
+        final visible = allItems
+            .where((i) => i.category != null && _visibleCategories.contains(i.category))
+            .toList();
+        ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
         setState(() {
           _items = allItems;
           _state = _ReviewState.items;
@@ -116,6 +120,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           final visible = _items
               .where((i) => i.category != null && _visibleCategories.contains(i.category))
               .toList();
+          ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
           if (visible.isEmpty) {
             _state = _ReviewState.empty;
           }
@@ -188,19 +193,19 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             children: [
               const Spacer(),
               Text(
-                '지금은 맡겨둔 것이 없습니다.',
+                '지금 다시 꺼내볼 것은 없습니다.',
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                '방금 내려놓은 것들은 다시 붙잡지 않아도 됩니다.',
+                '방금 내려놓은 생각들은 여기서 닫아두었습니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                '필요하면 새로 비워내고,\n아니면 그대로 닫아도 괜찮습니다.',
+                '필요하면 새로 비워내고, 아니면 이대로 마쳐도 괜찮습니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -236,7 +241,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             children: [
               const Spacer(),
               Text(
-                '그대로 맡겨두겠습니다.',
+                '그대로 두어도 괜찮습니다.',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w300,
                     ),
@@ -367,7 +372,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             Center(
               child: TextButton(
                 onPressed: _keepEntrusted,
-                child: const Text('그대로 맡겨두기',
+                child: const Text('그대로 두기',
                     style: TextStyle(color: AppTheme.secondaryText, fontSize: 14)),
               ),
             ),

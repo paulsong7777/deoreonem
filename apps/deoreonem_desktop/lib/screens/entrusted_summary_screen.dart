@@ -51,6 +51,14 @@ class _EntrustedSummaryScreenState
             session.sessionId,
             DateTime.now(),
           );
+      // Cache reviewable count for StartScreen
+      final summary = ref.read(summaryProvider).valueOrNull;
+      if (summary != null) {
+        final reviewableCount = summary.itemsByCategory.entries
+            .where((e) => ['TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY'].contains(e.key))
+            .fold<int>(0, (sum, e) => sum + e.value.length);
+        await ref.read(localStorageProvider).setReviewableEntrustedCount(reviewableCount);
+      }
       if (mounted) context.go('/complete');
     } catch (e) {
       if (mounted) {

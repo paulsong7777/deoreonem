@@ -16,6 +16,8 @@ class ClassificationScreen extends ConsumerStatefulWidget {
 
 class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
   bool _isClassifying = false;
+  final List<String> _classifiedItemIds = [];
+  String? _reviewingItemId;
 
   static const List<Map<String, String>> categoryButtons = [
     {'key': 'NOW', 'label': '지금', 'desc': '오늘 안에 반드시'},
@@ -33,6 +35,32 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
+    // If reviewing a previous item, reclassify it and return to forward flow
+    if (_reviewingItemId != null) {
+      final item = items.firstWhere((i) => i.itemId == _reviewingItemId, orElse: () => items.first);
+      setState(() => _isClassifying = true);
+      try {
+        await ref
+            .read(itemsProvider.notifier)
+            .updateCategory(session.sessionId, item.itemId, category);
+        if (mounted) {
+          setState(() {
+            _isClassifying = false;
+            _reviewingItemId = null;
+          });
+          // Check if all classified
+          final allItems = ref.read(itemsProvider).valueOrNull ?? [];
+          final remaining = allItems.where((i) => i.category == null).toList();
+          if (remaining.isEmpty && allItems.isNotEmpty) {
+            context.go('/first-action');
+          }
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isClassifying = false);
+      }
+      return;
+    }
+
     final unclassified = items.where((i) => i.category == null).toList();
     if (unclassified.isEmpty) return;
 
@@ -45,7 +73,10 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
           .updateCategory(session.sessionId, item.itemId, category);
 
       if (mounted) {
-        setState(() => _isClassifying = false);
+        setState(() {
+          _isClassifying = false;
+          _classifiedItemIds.add(item.itemId);
+        });
 
         // Auto-navigate if this was the last item
         final allItems = ref.read(itemsProvider).valueOrNull ?? [];
@@ -61,6 +92,16 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     }
   }
 
+  void _goToPreviousItem(List<ItemModel> items) {
+    if (_classifiedItemIds.isEmpty) return;
+    final lastId = _classifiedItemIds.last;
+    setState(() => _reviewingItemId = lastId);
+  }
+
+  void _goToNextItem() {
+    setState(() => _reviewingItemId = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final itemsState = ref.watch(itemsProvider);
@@ -71,10 +112,19 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
 
     // Find the current item to display
     ItemModel? currentItem;
-    if (unclassified.isNotEmpty) {
-      currentItem = unclassified.first;
-    } else if (items.isNotEmpty) {
-      currentItem = items.last;
+    bool isReviewing = false;
+    if (_reviewingItemId != null) {
+      currentItem = items.cast<ItemModel?>().firstWhere(
+          (i) => i!.itemId == _reviewingItemId,
+          orElse: () => null);
+      isReviewing = currentItem != null;
+    }
+    if (currentItem == null) {
+      if (unclassified.isNotEmpty) {
+        currentItem = unclassified.first;
+      } else if (items.isNotEmpty) {
+        currentItem = items.last;
+      }
     }
 
     if (items.isEmpty) {
@@ -117,6 +167,19 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
+                if (_classifiedItemIds.isNotEmpty && !isReviewing)
+                  GestureDetector(
+                    onTap: () => _goToPreviousItem(items),
+                    child: Text('이전 항목',
+                        style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                  ),
+                if (isReviewing)
+                  GestureDetector(
+                    onTap: _goToNextItem,
+                    child: Text('다음 항목',
+                        style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                  ),
                 const Spacer(),
                 Text(
                   '$classifiedCount / ${items.length} 분류됨',
@@ -150,8 +213,11 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                       itemBuilder: (context, index) {
                         final cat = categoryButtons[index];
                         final isDropCategory = cat['key'] == 'DROP';
+                        final isCurrentCategory = isReviewing &&
+                            currentItem != null &&
+                            currentItem.category == cat['key'];
                         return OutlinedButton(
-                          onPressed: allClassified
+                          onPressed: (allClassified && !isReviewing)
                               ? null
                               : () => _classify(cat['key']!, items),
                           style: OutlinedButton.styleFrom(
@@ -161,6 +227,12 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
                             alignment: Alignment.centerLeft,
+                            side: isCurrentCategory
+                                ? BorderSide(color: AppTheme.accent, width: 2)
+                                : null,
+                            backgroundColor: isCurrentCategory
+                                ? AppTheme.accent.withValues(alpha: 0.06)
+                                : null,
                           ),
                           child: Row(
                             children: [

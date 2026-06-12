@@ -42,8 +42,11 @@ void main() {
     expect(find.text('v0.3.0'), findsOneWidget);
   });
 
-  testWidgets('review button NOT shown when no saved session', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+  testWidgets('review button NOT shown when reviewable count is 0',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'reviewable_entrusted_count': 0,
+    });
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
@@ -61,9 +64,10 @@ void main() {
     expect(find.text('맡겨둔 것 확인하기'), findsNothing);
   });
 
-  testWidgets('review button shown when saved session exists', (tester) async {
+  testWidgets('review button shown when reviewable count > 0',
+      (tester) async {
     SharedPreferences.setMockInitialValues({
-      'recent_completed_session_ids': ['session-abc'],
+      'reviewable_entrusted_count': 3,
     });
     final prefs = await SharedPreferences.getInstance();
 

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   static const _keyRecentSessions = 'recent_completed_session_ids';
   static const _maxRecentSessions = 7;
+  static const _keyReviewableCount = 'reviewable_entrusted_count';
 
   final SharedPreferences _prefs;
 
@@ -43,5 +44,11 @@ class LocalStorageService {
 
   Future<void> clearLastCompletedSession() async {
     await _prefs.remove(_keyRecentSessions);
+  }
+
+  int get reviewableEntrustedCount => _prefs.getInt(_keyReviewableCount) ?? 0;
+
+  Future<void> setReviewableEntrustedCount(int count) async {
+    await _prefs.setInt(_keyReviewableCount, count);
   }
 }
