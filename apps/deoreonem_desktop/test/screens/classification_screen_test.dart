@@ -99,4 +99,37 @@ void main() {
     expect(find.text('분류할 항목이 없습니다.'), findsOneWidget);
     expect(find.text('돌아가기'), findsOneWidget);
   });
+
+  testWidgets('ClassificationScreen shows worry soft-fade description and helper copy',
+      (tester) async {
+    final items = [
+      ItemModel(
+        itemId: 'item-1',
+        sessionId: 'session-1',
+        content: '테스트 항목',
+        category: null,
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 9),
+        updatedAt: DateTime.utc(2026, 6, 9),
+      ),
+    ];
+
+    await tester.pumpWidget(buildWidget(items));
+
+    // Scroll to find worry button description
+    await tester.scrollUntilVisible(
+      find.text('3일 뒤 조용히 사라질 걱정'),
+      50.0,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
+
+    expect(find.text('3일 뒤 조용히 사라질 걱정'), findsOneWidget);
+
+    // Helper copy (may need scroll)
+    expect(find.textContaining('할 일이 아니라 걱정으로만 남은 생각은 걱정만에 맡겨도 됩니다.'), findsOneWidget);
+    expect(find.textContaining('이 걱정은 3일 뒤 조용히 사라집니다.'), findsOneWidget);
+    expect(find.textContaining('지금 해결하지 않아도 괜찮아요.'), findsOneWidget);
+  });
 }

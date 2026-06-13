@@ -271,4 +271,163 @@ void main() {
     expect(find.text('저장된 세션이 없습니다.'), findsOneWidget);
     expect(find.text('새로 비우기'), findsOneWidget);
   });
+
+  testWidgets('WORRY_ONLY items show drawer label, soft-fade copy, and worry let-go button',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'recent_completed_session_ids': ['session-1'],
+    });
+    final prefs = await SharedPreferences.getInstance();
+
+    final items = [
+      ItemModel(
+        itemId: 'item-1',
+        sessionId: 'session-1',
+        content: '프로젝트 방향 맞는 걸까',
+        category: 'WORRY_ONLY',
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 10),
+        updatedAt: DateTime.utc(2026, 6, 10),
+      ),
+      ItemModel(
+        itemId: 'item-2',
+        sessionId: 'session-1',
+        content: '보고서 작성하기',
+        category: 'TOMORROW',
+        isFirstAction: false,
+        sortOrder: 2,
+        createdAt: DateTime.utc(2026, 6, 10),
+        updatedAt: DateTime.utc(2026, 6, 10),
+      ),
+    ];
+
+    when(() => mockApi.getReview('session-1')).thenAnswer((_) async => items);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionProvider.overrideWith((ref) => SessionNotifier(mockApi)),
+          itemsProvider.overrideWith((ref) => ItemsNotifier(mockApi)),
+          summaryProvider.overrideWith((ref) => SummaryNotifier(mockApi)),
+          apiServiceProvider.overrideWithValue(mockApi),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const MaterialApp(home: ReviewScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Drawer labels visible
+    expect(find.text('감정 서랍'), findsOneWidget);
+    expect(find.text('일정 서랍'), findsOneWidget);
+    // Category labels
+    expect(find.text('걱정만 남은 것'), findsOneWidget);
+    expect(find.text('내일 다시 볼 것'), findsOneWidget);
+    // Worry soft-fade copy
+    expect(find.textContaining('이 걱정은 3일 뒤 조용히 사라집니다.'), findsOneWidget);
+    expect(find.textContaining('지금 해결하지 않아도 괜찮아요.'), findsOneWidget);
+    // Worry let-go button
+    expect(find.text('이 걱정 내려놓기'), findsOneWidget);
+    // Non-worry still shows normal button
+    expect(find.text('이제 괜찮아요'), findsOneWidget);
+  });
+
+  testWidgets('Worry let-go calls updateCategory with DROP', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'recent_completed_session_ids': ['session-1'],
+    });
+    final prefs = await SharedPreferences.getInstance();
+
+    final items = [
+      ItemModel(
+        itemId: 'worry-1',
+        sessionId: 'session-1',
+        content: '걱정 항목',
+        category: 'WORRY_ONLY',
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 10),
+        updatedAt: DateTime.utc(2026, 6, 10),
+      ),
+    ];
+
+    when(() => mockApi.getReview('session-1')).thenAnswer((_) async => items);
+    when(() => mockApi.updateCategory('session-1', 'worry-1', 'DROP'))
+        .thenAnswer((_) async => items[0].copyWith(category: 'DROP'));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionProvider.overrideWith((ref) => SessionNotifier(mockApi)),
+          itemsProvider.overrideWith((ref) => ItemsNotifier(mockApi)),
+          summaryProvider.overrideWith((ref) => SummaryNotifier(mockApi)),
+          apiServiceProvider.overrideWithValue(mockApi),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const MaterialApp(home: ReviewScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('걱정 항목'), findsOneWidget);
+
+    await tester.tap(find.text('이 걱정 내려놓기'));
+    await tester.pumpAndSettle();
+
+    // Item removed
+    expect(find.text('걱정 항목'), findsNothing);
+    // API called correctly
+    verify(() => mockApi.updateCategory('session-1', 'worry-1', 'DROP')).called(1);
+  });
+
+  testWidgets('Empty state shows soft-fade nourishment copy', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'recent_completed_session_ids': ['session-1'],
+    });
+    final prefs = await SharedPreferences.getInstance();
+
+    // Return only one worry item so we can let it go and see empty state
+    final items = [
+      ItemModel(
+        itemId: 'worry-1',
+        sessionId: 'session-1',
+        content: '걱정 항목',
+        category: 'WORRY_ONLY',
+        isFirstAction: false,
+        sortOrder: 1,
+        createdAt: DateTime.utc(2026, 6, 10),
+        updatedAt: DateTime.utc(2026, 6, 10),
+      ),
+    ];
+
+    when(() => mockApi.getReview('session-1')).thenAnswer((_) async => items);
+    when(() => mockApi.updateCategory('session-1', 'worry-1', 'DROP'))
+        .thenAnswer((_) async => items[0].copyWith(category: 'DROP'));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionProvider.overrideWith((ref) => SessionNotifier(mockApi)),
+          itemsProvider.overrideWith((ref) => ItemsNotifier(mockApi)),
+          summaryProvider.overrideWith((ref) => SummaryNotifier(mockApi)),
+          apiServiceProvider.overrideWithValue(mockApi),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const MaterialApp(home: ReviewScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Let go of the only item
+    await tester.tap(find.text('이 걱정 내려놓기'));
+    await tester.pumpAndSettle();
+
+    // Empty state with nourishment copy
+    expect(find.text('지금 다시 꺼내볼 것은 없습니다.'), findsOneWidget);
+    expect(find.textContaining('사라진 것이 아니라, 오늘의 쉼을 위한 작은 양분이 되었습니다.'), findsOneWidget);
+  });
 }
