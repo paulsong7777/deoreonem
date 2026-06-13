@@ -91,8 +91,7 @@ void main() {
     // New title
     expect(find.text('잠시 맡겨둔 서랍'), findsOneWidget);
     // Subtitle copy
-    expect(find.text('일정은 일정 서랍에, 걱정은 감정 서랍에 잠시 맡겨두었습니다.'), findsOneWidget);
-    expect(find.text('지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 괜찮습니다.'), findsOneWidget);
+    expect(find.text('잠시 맡겨둔 서랍을 확인합니다.'), findsOneWidget);
     // Visible items (TOMORROW + WAITING)
     expect(find.text('보고서 작성하기'), findsOneWidget);
     expect(find.text('기다리는 중'), findsOneWidget);
@@ -387,6 +386,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('걱정 항목'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('이 걱정 내려놓기'),
+      50.0,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
 
     await tester.tap(find.text('이 걱정 내려놓기'));
     await tester.pumpAndSettle();

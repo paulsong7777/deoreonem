@@ -36,17 +36,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     'WORRY_ONLY': '걱정만 남은 것',
   };
 
-  static const Map<String, String> _drawerLabels = {
-    'TOMORROW': '일정 서랍',
-    'THIS_WEEK': '일정 서랍',
-    'WAITING': '일정 서랍',
-    'MEMO': '메모 서랍',
-    'WORRY_ONLY': '감정 서랍',
+  static const Map<String, List<String>> _drawerGroups = {
+    '일정 서랍': ['TOMORROW', 'THIS_WEEK', 'WAITING'],
+    '메모 서랍': ['MEMO'],
+    '감정 서랍': ['WORRY_ONLY'],
   };
-
-  static const List<String> _categoryOrder = [
-    'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
-  ];
 
   static const Set<String> _visibleCategories = {
     'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
@@ -344,6 +338,90 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     return '${createdAt.month}월 ${createdAt.day}일 맡김';
   }
 
+  Widget _buildItemCard(BuildContext context, ItemModel item, bool isWorry, bool isMemo, bool isSchedule) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 4, left: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.content, style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 4),
+            Text(_entrustedLabel(item.createdAt),
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+            if (isWorry) ...[
+              const SizedBox(height: 4),
+              Text('이 걱정은 3일 뒤 조용히 사라집니다.\n지금 해결하지 않아도 괜찮아요.',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.secondaryText,
+                      height: 1.4)),
+            ],
+            const SizedBox(height: 4),
+            if (_removingIds.contains(item.itemId))
+              const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              _buildActions(item, isWorry, isMemo, isSchedule),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(ItemModel item, bool isWorry, bool isMemo, bool isSchedule) {
+    if (isSchedule) {
+      return Row(
+        children: [
+          TextButton(
+            onPressed: () => _keepItem(item, '일정 서랍에 그대로 두었습니다.'),
+            child: Text('나중에 보기',
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () => _closeItem(item),
+            child: Text('오늘은 닫기',
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+          ),
+        ],
+      );
+    }
+    if (isMemo) {
+      return Row(
+        children: [
+          TextButton(
+            onPressed: () => _keepItem(item, '메모 서랍에 조용히 보관했습니다.'),
+            child: Text('보관하기',
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () => _closeItem(item),
+            child: Text('닫기',
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+          ),
+        ],
+      );
+    }
+    // Worry
+    return Row(
+      children: [
+        TextButton(
+          onPressed: () => _keepItem(item, '감정 서랍에 조금 더 맡겨두었습니다.'),
+          child: Text('조금 더 맡겨두기',
+              style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+        ),
+        TextButton(
+          onPressed: () => _letGoWorry(item),
+          child: Text('이 걱정 내려놓기',
+              style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+        ),
+      ],
+    );
+  }
+
   Widget _buildItemsView(BuildContext context) {
     final items = _items
         .where((i) => i.category != null && _visibleCategories.contains(i.category))
@@ -373,116 +451,50 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '일정은 일정 서랍에, 걱정은 감정 서랍에 잠시 맡겨두었습니다.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 괜찮습니다.',
+              '잠시 맡겨둔 서랍을 확인합니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             Expanded(
               child: ListView(
-                children: _categoryOrder
-                    .where((cat) => grouped.containsKey(cat))
-                    .map((cat) {
-                  final label = categoryLabels[cat] ?? cat;
-                  final drawerLabel = _drawerLabels[cat] ?? '';
-                  final groupItems = grouped[cat]!;
-                  final isWorry = cat == 'WORRY_ONLY';
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          children: [
-                            Text(label,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.secondaryText,
-                                    fontSize: 13)),
-                            if (drawerLabel.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              Text(drawerLabel,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppTheme.secondaryText.withOpacity(0.7))),
-                            ],
-                          ],
+                children: _drawerGroups.entries.where((drawer) {
+                  return drawer.value.any((cat) => grouped.containsKey(cat));
+                }).expand((drawer) {
+                  return [
+                    // Drawer heading
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, bottom: 4),
+                      child: Text(drawer.key,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryText)),
+                    ),
+                    // Subcategories within this drawer
+                    ...drawer.value
+                        .where((cat) => grouped.containsKey(cat))
+                        .expand((cat) {
+                      final label = categoryLabels[cat] ?? cat;
+                      final isWorry = cat == 'WORRY_ONLY';
+                      final isMemo = cat == 'MEMO';
+                      final isSchedule = cat == 'TOMORROW' ||
+                          cat == 'THIS_WEEK' ||
+                          cat == 'WAITING';
+                      return [
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(left: 8, top: 8, bottom: 4),
+                          child: Text(label,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.secondaryText)),
                         ),
-                      ),
-                      ...groupItems.map((item) {
-                        final isMemo = cat == 'MEMO';
-                        final isSchedule = cat == 'TOMORROW' || cat == 'THIS_WEEK' || cat == 'WAITING';
-                        return Card(
-                            margin: const EdgeInsets.only(bottom: 4),
-                            child: ListTile(
-                              title: Text(item.content,
-                                  style: const TextStyle(fontSize: 14)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(_entrustedLabel(item.createdAt),
-                                      style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                  if (isWorry) ...[
-                                    const SizedBox(height: 4),
-                                    Text('이 걱정은 3일 뒤 조용히 사라집니다.\n지금 해결하지 않아도 괜찮아요.',
-                                        style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.4)),
-                                  ],
-                                ],
-                              ),
-                              dense: true,
-                              trailing: _removingIds.contains(item.itemId)
-                                  ? const SizedBox(width: 16, height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2))
-                                  : isSchedule
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () => _keepItem(item, '일정 서랍에 그대로 두었습니다.'),
-                                              child: Text('나중에 보기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                            ),
-                                            TextButton(
-                                              onPressed: () => _closeItem(item),
-                                              child: Text('오늘은 닫기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                            ),
-                                          ],
-                                        )
-                                      : isMemo
-                                          ? Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () => _keepItem(item, '메모 서랍에 조용히 보관했습니다.'),
-                                                  child: Text('보관하기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () => _closeItem(item),
-                                                  child: Text('닫기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                                ),
-                                              ],
-                                            )
-                                          : Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () => _keepItem(item, '감정 서랍에 조금 더 맡겨두었습니다.'),
-                                                  child: Text('조금 더 맡겨두기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () => _letGoWorry(item),
-                                                  child: Text('이 걱정 내려놓기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-                                                ),
-                                              ],
-                                            ),
-                            ),
-                          );
-                      }),
-                    ],
-                  );
+                        ...grouped[cat]!.map((item) => _buildItemCard(
+                            context, item, isWorry, isMemo, isSchedule)),
+                      ];
+                    }),
+                  ];
                 }).toList(),
               ),
             ),

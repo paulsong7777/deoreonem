@@ -23,10 +23,40 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     {'key': 'NOW', 'label': '지금', 'desc': '오늘 안에 반드시'},
     {'key': 'TOMORROW', 'label': '내일', 'desc': '내일 첫 번째로'},
     {'key': 'THIS_WEEK', 'label': '이번 주', 'desc': '이번 주 안에'},
-    {'key': 'WAITING', 'label': '대기 중', 'desc': '누군가를 기다리는 중'},
+    {'key': 'WAITING', 'label': '대기 중', 'desc': '기다리는 중'},
     {'key': 'MEMO', 'label': '메모', 'desc': '기억해두기'},
     {'key': 'WORRY_ONLY', 'label': '걱정만', 'desc': '3일 뒤 조용히 사라질 걱정'},
-    {'key': 'DROP', 'label': '남기지 않기', 'desc': '서랍에 넣지 않고 바로 흘려보내기'},
+    {'key': 'DROP', 'label': '바로 흘려보내기', 'desc': '서랍에 넣지 않고 지금은 흘려보냅니다.'},
+  ];
+
+  static const List<Map<String, dynamic>> _categoryGroups = [
+    {
+      'drawer': '일정 서랍',
+      'items': [
+        {'key': 'NOW', 'label': '지금', 'desc': '오늘 안에 반드시'},
+        {'key': 'TOMORROW', 'label': '내일', 'desc': '내일 첫 번째로'},
+        {'key': 'THIS_WEEK', 'label': '이번 주', 'desc': '이번 주 안에'},
+        {'key': 'WAITING', 'label': '대기 중', 'desc': '기다리는 중'},
+      ],
+    },
+    {
+      'drawer': '메모 서랍',
+      'items': [
+        {'key': 'MEMO', 'label': '메모', 'desc': '기억해두기'},
+      ],
+    },
+    {
+      'drawer': '감정 서랍',
+      'items': [
+        {'key': 'WORRY_ONLY', 'label': '걱정만', 'desc': '3일 뒤 조용히 사라질 걱정'},
+      ],
+    },
+    {
+      'drawer': '',
+      'items': [
+        {'key': 'DROP', 'label': '바로 흘려보내기', 'desc': '서랍에 넣지 않고 지금은 흘려보냅니다.'},
+      ],
+    },
   ];
 
   Future<void> _classify(String category, List<ItemModel> items) async {
@@ -197,57 +227,74 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                 ),
               ),
             const SizedBox(height: 24),
-            // Calm helper copy
+            // Minimal worry helper
             Text(
-              '할 일이 아니라 걱정으로만 남은 생각은 걱정만에 맡겨도 됩니다.\n이 걱정은 3일 뒤 조용히 사라집니다. 지금 해결하지 않아도 괜찮아요.',
-              style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.5),
+              '걱정은 맡겨두면 3일 뒤 조용히 사라집니다.',
+              style: TextStyle(fontSize: 10, color: AppTheme.secondaryText.withOpacity(0.7)),
             ),
             const SizedBox(height: 16),
             // Category buttons
             Expanded(
               child: _isClassifying
                   ? const Center(child: CircularProgressIndicator())
-                  : ListView.separated(
-                      itemCount: categoryButtons.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final cat = categoryButtons[index];
-                        final isDropCategory = cat['key'] == 'DROP';
-                        final isCurrentCategory = isReviewing &&
-                            currentItem != null &&
-                            currentItem.category == cat['key'];
-                        return OutlinedButton(
-                          onPressed: (allClassified && !isReviewing)
-                              ? null
-                              : () => _classify(cat['key']!, items),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: isDropCategory
-                                ? AppTheme.drop
-                                : AppTheme.primaryText,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            alignment: Alignment.centerLeft,
-                            side: isCurrentCategory
-                                ? BorderSide(color: AppTheme.accent, width: 2)
-                                : null,
-                            backgroundColor: isCurrentCategory
-                                ? AppTheme.accent.withValues(alpha: 0.06)
-                                : null,
-                          ),
-                          child: Row(
-                            children: [
-                              Text(cat['label']!,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600)),
-                              const SizedBox(width: 12),
-                              Text(cat['desc']!,
+                  : ListView(
+                      children: _categoryGroups.expand((group) {
+                        final drawer = group['drawer'] as String;
+                        final catItems = (group['items'] as List).cast<Map<String, String>>();
+                        return [
+                          if (drawer.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12, bottom: 4),
+                              child: Text(drawer,
                                   style: TextStyle(
-                                      color: AppTheme.secondaryText,
-                                      fontSize: 13)),
-                            ],
-                          ),
-                        );
-                      },
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.secondaryText)),
+                            ),
+                          ...catItems.map((cat) {
+                            final isDropCategory = cat['key'] == 'DROP';
+                            final isCurrentCategory = isReviewing &&
+                                currentItem != null &&
+                                currentItem.category == cat['key'];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: OutlinedButton(
+                                onPressed: (allClassified && !isReviewing)
+                                    ? null
+                                    : () => _classify(cat['key']!, items),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: isDropCategory
+                                      ? AppTheme.drop
+                                      : AppTheme.primaryText,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  alignment: Alignment.centerLeft,
+                                  side: isCurrentCategory
+                                      ? BorderSide(color: AppTheme.accent, width: 2)
+                                      : null,
+                                  backgroundColor: isCurrentCategory
+                                      ? AppTheme.accent.withValues(alpha: 0.06)
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(cat['label']!,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(cat['desc']!,
+                                          style: TextStyle(
+                                              color: AppTheme.secondaryText,
+                                              fontSize: 13)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ];
+                      }).toList(),
                     ),
             ),
             const SizedBox(height: 16),

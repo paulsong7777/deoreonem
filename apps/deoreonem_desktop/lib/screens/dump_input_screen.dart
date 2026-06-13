@@ -86,6 +86,17 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            GestureDetector(
+              onTap: () => context.go('/'),
+              child: Row(
+                children: [
+                  Icon(Icons.home_outlined, size: 16, color: AppTheme.secondaryText),
+                  const SizedBox(width: 4),
+                  Text('처음으로', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
             Text('오늘 남은 것들',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),

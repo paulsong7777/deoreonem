@@ -70,24 +70,24 @@ void main() {
 
     // Progress text
     expect(find.textContaining('분류됨'), findsOneWidget);
-    // Category buttons
+    // Category buttons - some may require scrolling with grouped layout
     expect(find.text('지금'), findsOneWidget);
     expect(find.text('내일'), findsOneWidget);
     expect(find.text('이번 주'), findsOneWidget);
     expect(find.text('대기 중'), findsOneWidget);
-    expect(find.text('메모'), findsOneWidget);
 
     // Scroll down to reveal remaining buttons
     await tester.scrollUntilVisible(
-      find.text('남기지 않기'),
+      find.text('바로 흘려보내기'),
       50.0,
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pump();
 
+    expect(find.text('메모'), findsOneWidget);
     expect(find.text('걱정만'), findsOneWidget);
-    expect(find.text('남기지 않기'), findsOneWidget);
-    expect(find.text('서랍에 넣지 않고 바로 흘려보내기'), findsOneWidget);
+    expect(find.text('바로 흘려보내기'), findsOneWidget);
+    expect(find.text('서랍에 넣지 않고 지금은 흘려보냅니다.'), findsOneWidget);
     // Item card with content
     expect(find.byType(Card), findsWidgets);
   });
@@ -128,9 +128,7 @@ void main() {
 
     expect(find.text('3일 뒤 조용히 사라질 걱정'), findsOneWidget);
 
-    // Helper copy (may need scroll)
-    expect(find.textContaining('할 일이 아니라 걱정으로만 남은 생각은 걱정만에 맡겨도 됩니다.'), findsOneWidget);
-    expect(find.textContaining('이 걱정은 3일 뒤 조용히 사라집니다.'), findsOneWidget);
-    expect(find.textContaining('지금 해결하지 않아도 괜찮아요.'), findsOneWidget);
+    // Minimal helper copy
+    expect(find.textContaining('걱정은 맡겨두면 3일 뒤 조용히 사라집니다.'), findsOneWidget);
   });
 }
