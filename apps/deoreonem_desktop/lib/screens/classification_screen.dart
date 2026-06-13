@@ -26,7 +26,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     {'key': 'WAITING', 'label': '대기 중', 'desc': '누군가를 기다리는 중'},
     {'key': 'MEMO', 'label': '메모', 'desc': '기억해두기'},
     {'key': 'WORRY_ONLY', 'label': '걱정만', 'desc': '3일 뒤 조용히 사라질 걱정'},
-    {'key': 'DROP', 'label': '버리기', 'desc': '내려놓기'},
+    {'key': 'DROP', 'label': '남기지 않기', 'desc': '서랍에 넣지 않고 바로 흘려보내기'},
   ];
 
   Future<void> _classify(String category, List<ItemModel> items) async {

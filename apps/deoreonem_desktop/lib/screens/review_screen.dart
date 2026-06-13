@@ -26,6 +26,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   String? _errorMessage;
   final Set<String> _removingIds = {};
   bool _isStarting = false;
+  bool _hasConvertedWorryToNutrient = false;
 
   static const Map<String, String> categoryLabels = {
     'TOMORROW': '내일 다시 볼 것',
@@ -117,9 +118,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
-  Future<void> _letGo(ItemModel item) async {
-    if (_removingIds.contains(item.itemId)) return;
+  void _keepItem(ItemModel item, String message) {
+    // No backend call — just show a calm SnackBar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
 
+  Future<void> _closeItem(ItemModel item) async {
+    if (_removingIds.contains(item.itemId)) return;
     setState(() => _removingIds.add(item.itemId));
     try {
       final api = ref.read(apiServiceProvider);
@@ -128,22 +135,42 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         setState(() {
           _items.removeWhere((i) => i.itemId == item.itemId);
           _removingIds.remove(item.itemId);
-          // Check if all visible items are gone
-          final visible = _items
-              .where((i) => i.category != null && _visibleCategories.contains(i.category))
-              .toList();
+          final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
           ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
-          if (visible.isEmpty) {
-            _state = _ReviewState.empty;
-          }
+          if (visible.isEmpty) _state = _ReviewState.empty;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _removingIds.remove(item.itemId));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')));
+      }
+    }
+  }
+
+  Future<void> _letGoWorry(ItemModel item) async {
+    if (_removingIds.contains(item.itemId)) return;
+    setState(() => _removingIds.add(item.itemId));
+    try {
+      final api = ref.read(apiServiceProvider);
+      await api.updateCategory(item.sessionId, item.itemId, 'DROP');
+      if (mounted) {
+        setState(() {
+          _items.removeWhere((i) => i.itemId == item.itemId);
+          _removingIds.remove(item.itemId);
+          _hasConvertedWorryToNutrient = true;
+          final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
+          ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
+          if (visible.isEmpty) _state = _ReviewState.empty;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')),
+          const SnackBar(content: Text('걱정 하나가 작은 양분이 되었습니다.'), duration: Duration(seconds: 3)),
         );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _removingIds.remove(item.itemId));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')));
       }
     }
   }
@@ -210,22 +237,25 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              Text(
-                '방금 내려놓은 생각들은 여기서 닫아두었습니다.',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
+              if (_hasConvertedWorryToNutrient) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '사라진 것이 아니라, 오늘의 쉼을 위한 작은 양분이 되었습니다.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Text(
+                  '방금 닫아둔 생각들은 여기서 조용히 정리되었습니다.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 '필요하면 새로 비워내고, 아니면 이대로 마쳐도 괜찮습니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '사라진 것이 아니라, 오늘의 쉼을 위한 작은 양분이 되었습니다.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -383,7 +413,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                           ],
                         ),
                       ),
-                      ...groupItems.map((item) => Card(
+                      ...groupItems.map((item) {
+                        final isMemo = cat == 'MEMO';
+                        final isSchedule = cat == 'TOMORROW' || cat == 'THIS_WEEK' || cat == 'WAITING';
+                        return Card(
                             margin: const EdgeInsets.only(bottom: 4),
                             child: ListTile(
                               title: Text(item.content,
@@ -404,15 +437,50 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                               trailing: _removingIds.contains(item.itemId)
                                   ? const SizedBox(width: 16, height: 16,
                                       child: CircularProgressIndicator(strokeWidth: 2))
-                                  : TextButton(
-                                      onPressed: () => _letGo(item),
-                                      child: Text(
-                                        isWorry ? '이 걱정 내려놓기' : '이제 괜찮아요',
-                                        style: const TextStyle(fontSize: 12, color: AppTheme.secondaryText),
-                                      ),
-                                    ),
+                                  : isSchedule
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () => _keepItem(item, '일정 서랍에 그대로 두었습니다.'),
+                                              child: Text('나중에 보기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => _closeItem(item),
+                                              child: Text('오늘은 닫기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                            ),
+                                          ],
+                                        )
+                                      : isMemo
+                                          ? Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () => _keepItem(item, '메모 서랍에 조용히 보관했습니다.'),
+                                                  child: Text('보관하기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => _closeItem(item),
+                                                  child: Text('닫기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                                ),
+                                              ],
+                                            )
+                                          : Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () => _keepItem(item, '감정 서랍에 조금 더 맡겨두었습니다.'),
+                                                  child: Text('조금 더 맡겨두기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => _letGoWorry(item),
+                                                  child: Text('이 걱정 내려놓기', style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                                ),
+                                              ],
+                                            ),
                             ),
-                          )),
+                          );
+                      }),
                     ],
                   );
                 }).toList(),

@@ -26,7 +26,7 @@ class _EntrustedSummaryScreenState
     'WAITING': '대기 중',
     'MEMO': '메모',
     'WORRY_ONLY': '걱정만 남은 것',
-    'DROP': '버리기',
+    'DROP': '남기지 않기',
   };
 
   @override

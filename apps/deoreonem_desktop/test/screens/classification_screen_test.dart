@@ -79,14 +79,15 @@ void main() {
 
     // Scroll down to reveal remaining buttons
     await tester.scrollUntilVisible(
-      find.text('버리기'),
+      find.text('남기지 않기'),
       50.0,
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pump();
 
     expect(find.text('걱정만'), findsOneWidget);
-    expect(find.text('버리기'), findsOneWidget);
+    expect(find.text('남기지 않기'), findsOneWidget);
+    expect(find.text('서랍에 넣지 않고 바로 흘려보내기'), findsOneWidget);
     // Item card with content
     expect(find.byType(Card), findsWidgets);
   });
