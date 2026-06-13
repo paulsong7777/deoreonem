@@ -89,9 +89,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // New title
-    expect(find.text('잠시 맡겨둔 것들'), findsOneWidget);
+    expect(find.text('잠시 맡겨둔 서랍'), findsOneWidget);
     // Subtitle copy
-    expect(find.text('지난 덜어냄에서 잠시 내려놓은 생각들입니다.'), findsOneWidget);
+    expect(find.text('일정은 일정 서랍에, 걱정은 감정 서랍에 잠시 맡겨두었습니다.'), findsOneWidget);
     expect(find.text('지금 다시 볼 것만 확인하고, 나머지는 그대로 두어도 괜찮습니다.'), findsOneWidget);
     // Visible items (TOMORROW + WAITING)
     expect(find.text('보고서 작성하기'), findsOneWidget);

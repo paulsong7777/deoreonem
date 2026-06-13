@@ -35,6 +35,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     'WORRY_ONLY': '걱정만 남은 것',
   };
 
+  static const Map<String, String> _drawerLabels = {
+    'TOMORROW': '일정 서랍',
+    'THIS_WEEK': '일정 서랍',
+    'WAITING': '일정 서랍',
+    'MEMO': '메모 서랍',
+    'WORRY_ONLY': '감정 서랍',
+  };
+
   static const List<String> _categoryOrder = [
     'TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY',
   ];
@@ -213,6 +221,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              Text(
+                '사라진 것이 아니라, 오늘의 쉼을 위한 작은 양분이 되었습니다.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic),
+                textAlign: TextAlign.center,
+              ),
               const Spacer(),
               ElevatedButton(
                 onPressed: _isStarting ? null : _startNewSession,
@@ -324,11 +339,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('잠시 맡겨둔 것들',
+            Text('잠시 맡겨둔 서랍',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '지난 덜어냄에서 잠시 내려놓은 생각들입니다.',
+              '일정은 일정 서랍에, 걱정은 감정 서랍에 잠시 맡겨두었습니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 4),
@@ -343,33 +358,58 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     .where((cat) => grouped.containsKey(cat))
                     .map((cat) {
                   final label = categoryLabels[cat] ?? cat;
+                  final drawerLabel = _drawerLabels[cat] ?? '';
                   final groupItems = grouped[cat]!;
+                  final isWorry = cat == 'WORRY_ONLY';
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(label,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.secondaryText,
-                                fontSize: 13)),
+                        child: Row(
+                          children: [
+                            Text(label,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.secondaryText,
+                                    fontSize: 13)),
+                            if (drawerLabel.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(drawerLabel,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.secondaryText.withOpacity(0.7))),
+                            ],
+                          ],
+                        ),
                       ),
                       ...groupItems.map((item) => Card(
                             margin: const EdgeInsets.only(bottom: 4),
                             child: ListTile(
                               title: Text(item.content,
                                   style: const TextStyle(fontSize: 14)),
-                              subtitle: Text(_entrustedLabel(item.createdAt),
-                                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_entrustedLabel(item.createdAt),
+                                      style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                                  if (isWorry) ...[
+                                    const SizedBox(height: 4),
+                                    Text('이 걱정은 3일 뒤 조용히 사라집니다.\n지금 해결하지 않아도 괜찮아요.',
+                                        style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.4)),
+                                  ],
+                                ],
+                              ),
                               dense: true,
                               trailing: _removingIds.contains(item.itemId)
                                   ? const SizedBox(width: 16, height: 16,
                                       child: CircularProgressIndicator(strokeWidth: 2))
                                   : TextButton(
                                       onPressed: () => _letGo(item),
-                                      child: const Text('이제 괜찮아요',
-                                          style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                                      child: Text(
+                                        isWorry ? '이 걱정 내려놓기' : '이제 괜찮아요',
+                                        style: const TextStyle(fontSize: 12, color: AppTheme.secondaryText),
+                                      ),
                                     ),
                             ),
                           )),

@@ -25,7 +25,7 @@ class _EntrustedSummaryScreenState
     'THIS_WEEK': '이번 주',
     'WAITING': '대기 중',
     'MEMO': '메모',
-    'WORRY_ONLY': '걱정만',
+    'WORRY_ONLY': '걱정만 남은 것',
     'DROP': '버리기',
   };
 
@@ -167,6 +167,19 @@ class _EntrustedSummaryScreenState
                   '총 ${summary.totalItems}개를 맡겼습니다.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                // Worry soft-fade notice
+                if ((summary.itemsByCategory['WORRY_ONLY'] ?? []).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '걱정으로 맡겨둔 것 ${summary.itemsByCategory['WORRY_ONLY']!.length}개',
+                    style: TextStyle(fontSize: 12, color: AppTheme.secondaryText),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '이 걱정은 3일 뒤 조용히 사라집니다. 지금 해결하지 않아도 괜찮아요.',
+                    style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.4),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Expanded(
                   child: ListView(

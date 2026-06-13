@@ -25,7 +25,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     {'key': 'THIS_WEEK', 'label': '이번 주', 'desc': '이번 주 안에'},
     {'key': 'WAITING', 'label': '대기 중', 'desc': '누군가를 기다리는 중'},
     {'key': 'MEMO', 'label': '메모', 'desc': '기억해두기'},
-    {'key': 'WORRY_ONLY', 'label': '걱정만', 'desc': '지금은 어쩔 수 없는 걱정'},
+    {'key': 'WORRY_ONLY', 'label': '걱정만', 'desc': '3일 뒤 조용히 사라질 걱정'},
     {'key': 'DROP', 'label': '버리기', 'desc': '내려놓기'},
   ];
 
@@ -197,6 +197,12 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                 ),
               ),
             const SizedBox(height: 24),
+            // Calm helper copy
+            Text(
+              '할 일이 아니라 걱정으로만 남은 생각은 걱정만에 맡겨도 됩니다.\n이 걱정은 3일 뒤 조용히 사라집니다. 지금 해결하지 않아도 괜찮아요.',
+              style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.5),
+            ),
+            const SizedBox(height: 16),
             // Category buttons
             Expanded(
               child: _isClassifying
