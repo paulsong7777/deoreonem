@@ -67,19 +67,24 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
     final allItems = <ItemModel>[];
     final api = ref.read(apiServiceProvider);
+    int failCount = 0;
 
     for (final sessionId in sessionIds) {
       try {
         final items = await api.getReview(sessionId);
         allItems.addAll(items);
-      } catch (_) {}
+      } catch (_) {
+        failCount++;
+      }
     }
 
     if (mounted) {
       if (allItems.isEmpty) {
         setState(() {
           _state = _ReviewState.error;
-          _errorMessage = '리뷰를 불러오는데 실패했어요.';
+          _errorMessage = failCount > 0
+              ? '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.'
+              : '리뷰를 불러오는데 실패했어요.';
         });
       } else {
         final visible = allItems
@@ -256,6 +261,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             ElevatedButton(
               onPressed: _startNewSession,
               child: const Text('새로 비우기'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                setState(() => _state = _ReviewState.loading);
+                _loadReview();
+              },
+              child: const Text('다시 시도',
+                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 14)),
             ),
           ],
         ),

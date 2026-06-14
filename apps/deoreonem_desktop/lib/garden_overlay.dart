@@ -251,7 +251,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                 backgroundColor: Colors.transparent,
                 body: Stack(
                   children: [
-                    // Garden visual — the main focus, no intrusive tooltip
+                    // Garden visual — the main focus
                     QuietGardenPatch(totalNutrients: _currentNutrients),
 
                   // Close button (top-right, subtle)
@@ -259,7 +259,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     top: 4,
                     right: 4,
                     child: Tooltip(
-                      message: '작은 자리 닫기 (Esc)',
+                      message: '닫기 (Esc)',
                       child: GestureDetector(
                         onTap: _closeOverlay,
                         child: Container(
@@ -291,7 +291,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                         const PopupMenuItem(
                           value: 'open',
                           height: 36,
-                          child: Text('덜어냄 열기', style: TextStyle(fontSize: 13)),
+                          child: Text('덜어냄 열기 (두 번 클릭)', style: TextStyle(fontSize: 13)),
                         ),
                         const PopupMenuItem(
                           value: 'reset_position',
@@ -313,23 +313,8 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     ),
                   ),
 
-                  // Hint (bottom center, very subtle, small)
-                  Positioned(
-                    bottom: 4,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(
-                        '두 번 클릭해 덜어냄 열기',
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: AppTheme.secondaryText.withValues(alpha: 0.35),
-                          decoration: TextDecoration.none,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
+                  // No bottom hint — double-click guidance lives in menu.
+                  // Bottom space is reserved for QuietGardenPatch stage message.
                 ],
               ),
             ),

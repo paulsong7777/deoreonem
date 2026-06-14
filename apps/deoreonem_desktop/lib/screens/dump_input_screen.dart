@@ -14,12 +14,14 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    _focusNode = FocusNode();
   }
 
   /// Parse multiline text into non-empty trimmed lines
@@ -79,6 +81,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -140,10 +143,16 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   )),
               const Divider(height: 24),
             ],
-            // Multiline input area — no onChanged to avoid Korean IME crash
+            // Multiline input area.
+            // IMPORTANT for Korean IME stability on Windows:
+            // - Explicit FocusNode prevents recreation on rebuild
+            // - No onChanged, no ValueListenableBuilder, no controller listener
+            // - No inputFormatters that could interfere with composition
+            // - autofocus only requests focus once on mount
             Expanded(
               child: TextField(
                 controller: _controller,
+                focusNode: _focusNode,
                 maxLines: null,
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,

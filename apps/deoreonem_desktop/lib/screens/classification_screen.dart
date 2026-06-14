@@ -74,19 +74,29 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
             .read(itemsProvider.notifier)
             .updateCategory(session.sessionId, item.itemId, category);
         if (mounted) {
+          // Check if the update actually succeeded (provider not in error state)
+          final currentState = ref.read(itemsProvider);
+          if (currentState.hasError) {
+            setState(() => _isClassifying = false);
+            _showClassifyError();
+            return;
+          }
           setState(() {
             _isClassifying = false;
             _reviewingItemId = null;
           });
           // Check if all classified
-          final allItems = ref.read(itemsProvider).valueOrNull ?? [];
+          final allItems = currentState.valueOrNull ?? [];
           final remaining = allItems.where((i) => i.category == null).toList();
           if (remaining.isEmpty && allItems.isNotEmpty) {
             context.go('/first-action');
           }
         }
       } catch (_) {
-        if (mounted) setState(() => _isClassifying = false);
+        if (mounted) {
+          setState(() => _isClassifying = false);
+          _showClassifyError();
+        }
       }
       return;
     }
@@ -103,13 +113,21 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
           .updateCategory(session.sessionId, item.itemId, category);
 
       if (mounted) {
+        // Check if the update actually succeeded (provider not in error state)
+        final currentState = ref.read(itemsProvider);
+        if (currentState.hasError) {
+          setState(() => _isClassifying = false);
+          _showClassifyError();
+          return;
+        }
+
         setState(() {
           _isClassifying = false;
           _classifiedItemIds.add(item.itemId);
         });
 
         // Auto-navigate if this was the last item
-        final allItems = ref.read(itemsProvider).valueOrNull ?? [];
+        final allItems = currentState.valueOrNull ?? [];
         final remaining = allItems.where((i) => i.category == null).toList();
         if (remaining.isEmpty && allItems.isNotEmpty) {
           context.go('/first-action');
@@ -118,8 +136,18 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _isClassifying = false);
+        _showClassifyError();
       }
     }
+  }
+
+  void _showClassifyError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('분류를 저장하지 못했어요. 다시 시도해 주세요.'),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   void _goToPreviousItem(List<ItemModel> items) {

@@ -95,6 +95,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 8),
