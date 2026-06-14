@@ -9,11 +9,18 @@ import 'providers/local_storage_provider.dart';
 import 'widgets/quiet_garden_patch.dart';
 import 'theme.dart';
 
+const _keyOverlayX = 'garden_overlay_position_x';
+const _keyOverlayY = 'garden_overlay_position_y';
+const _windowWidth = 220.0;
+const _windowHeight = 160.0;
+
 Future<void> runGardenOverlay() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
-  const windowSize = Size(220, 160);
+  final prefs = await SharedPreferences.getInstance();
+
+  const windowSize = Size(_windowWidth, _windowHeight);
 
   WindowOptions windowOptions = const WindowOptions(
     size: windowSize,
@@ -27,22 +34,34 @@ Future<void> runGardenOverlay() async {
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
+    // Restore saved position or default to bottom-right
+    final savedX = prefs.getDouble(_keyOverlayX);
+    final savedY = prefs.getDouble(_keyOverlayY);
+
+    if (savedX != null && savedY != null && savedX >= 0 && savedY >= 0) {
+      await windowManager.setPosition(Offset(savedX, savedY));
+    } else {
+      // Default: bottom-right above taskbar
+      // Use a reasonable screen-based default
+      await windowManager.setAlignment(Alignment.bottomRight);
+    }
+
     await windowManager.show();
     await windowManager.setAsFrameless();
   });
-
-  final prefs = await SharedPreferences.getInstance();
 
   runApp(ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],
-    child: const GardenOverlayApp(),
+    child: _GardenOverlayApp(prefs: prefs),
   ));
 }
 
-class GardenOverlayApp extends ConsumerWidget {
-  const GardenOverlayApp({super.key});
+class _GardenOverlayApp extends ConsumerWidget {
+  final SharedPreferences prefs;
+
+  const _GardenOverlayApp({required this.prefs});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,15 +70,42 @@ class GardenOverlayApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: _GardenOverlayHome(totalNutrients: nutrients),
+      home: _GardenOverlayHome(totalNutrients: nutrients, prefs: prefs),
     );
   }
 }
 
-class _GardenOverlayHome extends StatelessWidget {
+class _GardenOverlayHome extends StatefulWidget {
   final int totalNutrients;
+  final SharedPreferences prefs;
 
-  const _GardenOverlayHome({required this.totalNutrients});
+  const _GardenOverlayHome({required this.totalNutrients, required this.prefs});
+
+  @override
+  State<_GardenOverlayHome> createState() => _GardenOverlayHomeState();
+}
+
+class _GardenOverlayHomeState extends State<_GardenOverlayHome>
+    with WindowListener {
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowMoved() async {
+    // Save position after drag
+    final pos = await windowManager.getPosition();
+    await widget.prefs.setDouble(_keyOverlayX, pos.dx);
+    await widget.prefs.setDouble(_keyOverlayY, pos.dy);
+  }
 
   void _closeOverlay() {
     exit(0);
@@ -87,15 +133,12 @@ class _GardenOverlayHome extends StatelessWidget {
           autofocus: true,
           child: GestureDetector(
             onPanStart: (_) async => await windowManager.startDragging(),
-            onSecondaryTap: () {
-              // Right-click context menu handled via overlay menu below
-            },
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: Stack(
                 children: [
                   // Garden visual
-                  QuietGardenPatch(totalNutrients: totalNutrients),
+                  QuietGardenPatch(totalNutrients: widget.totalNutrients),
 
                   // Close button (top-right, subtle)
                   Positioned(
