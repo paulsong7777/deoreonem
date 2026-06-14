@@ -70,10 +70,16 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         setState(() => _isSaving = false);
         context.go('/classify');
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         // Keep text on failure so user doesn't lose input
         setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('저장에 실패했어요. 다시 시도해 주세요.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -89,7 +95,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   Widget build(BuildContext context) {
     final itemsState = ref.watch(itemsProvider);
     final savedItems = itemsState.valueOrNull ?? [];
-    final hasError = itemsState.hasError;
 
     return Scaffold(
       body: Padding(
@@ -169,13 +174,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                 ),
               ),
             ),
-            if (hasError) ...[
-              const SizedBox(height: 8),
-              Text(
-                '저장에 실패했어요. 다시 시도해 주세요.',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
             const SizedBox(height: 16),
             // Button always enabled — validates on click only.
             // IMPORTANT: Do NOT use ValueListenableBuilder or onChanged with

@@ -12,16 +12,24 @@ class ItemsNotifier extends StateNotifier<AsyncValue<List<ItemModel>>> {
   final DecompressionApiService _api;
   ItemsNotifier(this._api) : super(const AsyncValue.data([]));
 
+  /// Adds an item to the session. Throws on failure so callers can handle errors.
   Future<void> addItem(String sessionId, String content) async {
     try {
       final item = await _api.addItem(sessionId, content);
       final current = state.valueOrNull ?? [];
       state = AsyncValue.data([...current, item]);
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // Preserve existing items on error — don't wipe the list
+      final current = state.valueOrNull;
+      if (current != null) {
+        // Keep items but surface error to callers
+        state = AsyncValue.data(current);
+      }
+      rethrow; // Let caller know save failed
     }
   }
 
+  /// Updates item category. Throws on failure so callers can handle errors.
   Future<void> updateCategory(
       String sessionId, String itemId, String category) async {
     try {
@@ -31,7 +39,8 @@ class ItemsNotifier extends StateNotifier<AsyncValue<List<ItemModel>>> {
         current.map((i) => i.itemId == itemId ? updated : i).toList(),
       );
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // Keep existing items on error — don't wipe the list
+      rethrow; // Let caller know classification failed
     }
   }
 
