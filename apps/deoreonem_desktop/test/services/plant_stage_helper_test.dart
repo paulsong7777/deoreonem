@@ -44,11 +44,11 @@ void main() {
     });
 
     test('pot signal message for sprout', () {
-      expect(getPotSignalMessage(1), '작은 화분에 양분이 조용히 쌓이고 있어요.');
+      expect(getPotSignalMessage(1), '내려놓은 걱정이 작은 자리에 스며들고 있어요.');
     });
 
     test('pot signal message for smallLeaf', () {
-      expect(getPotSignalMessage(5), '내려놓은 걱정들이 작은 싹을 틔우고 있어요.');
+      expect(getPotSignalMessage(5), '작은 싹이 조용히 자라고 있어요.');
     });
 
     test('pot signal message for youngPlant', () {

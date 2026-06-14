@@ -18,9 +18,9 @@ String getPotSignalMessage(int totalNutrients) {
     case PlantStage.seed:
       return '아직 내려놓은 걱정은 없습니다.';
     case PlantStage.sprout:
-      return '작은 화분에 양분이 조용히 쌓이고 있어요.';
+      return '내려놓은 걱정이 작은 자리에 스며들고 있어요.';
     case PlantStage.smallLeaf:
-      return '내려놓은 걱정들이 작은 싹을 틔우고 있어요.';
+      return '작은 싹이 조용히 자라고 있어요.';
     case PlantStage.youngPlant:
       return '조용한 잎이 조금씩 자라고 있어요.';
     case PlantStage.quietTree:

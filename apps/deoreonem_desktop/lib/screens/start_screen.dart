@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -96,9 +97,20 @@ class StartScreen extends ConsumerWidget {
                   child: const Text('맡겨둔 것 확인하기'),
                 ),
               ],
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () async {
+                  final exePath = Platform.resolvedExecutable;
+                  await Process.start(exePath, ['--garden'],
+                      mode: ProcessStartMode.detached);
+                },
+                child: const Text('작은 자리 보기',
+                    style:
+                        TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+              ),
               const Spacer(),
               Text(
-                'v0.3.0',
+                'v0.4.0-alpha',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
