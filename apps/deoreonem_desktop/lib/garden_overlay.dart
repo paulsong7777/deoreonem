@@ -137,25 +137,34 @@ void _releaseExclusiveOverlayLock(RandomAccessFile? handle) {
 }
 
 Future<void> runGardenOverlay() async {
+  // --- True single instance: exclusive file lock FIRST, before any Flutter init ---
+  // This prevents a race where a second launch gets past WidgetsFlutterBinding
+  // before the first has locked.
+  RandomAccessFile? lockHandle;
+  try {
+    final lockFile = _getOverlayLockFile();
+    if (!lockFile.existsSync()) {
+      lockFile.writeAsStringSync('');
+    }
+    final handle = lockFile.openSync(mode: FileMode.write);
+    try {
+      handle.lockSync(FileLock.exclusive);
+      handle.writeStringSync('${pid}\n${DateTime.now().toIso8601String()}');
+      handle.flushSync();
+      lockHandle = handle;
+    } catch (_) {
+      // Lock failed — another process holds it
+      handle.closeSync();
+      exit(0);
+    }
+  } catch (_) {
+    // File system error — allow launch (better than blocking all launches)
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
-
-  // --- True single instance: exclusive file lock ---
-  final lockHandle = await _acquireExclusiveOverlayLock();
-  if (lockHandle == null) {
-    // Another overlay is running OR lock file not available.
-    // Check if lock file exists — if it does, another instance holds it.
-    try {
-      final lockFile = _getOverlayLockFile();
-      if (lockFile.existsSync()) {
-        // Lock file exists but we couldn't acquire → another instance running
-        exit(0);
-      }
-    } catch (_) {}
-    // Lock file doesn't exist or we can't access it — proceed anyway
-  }
 
   // Acquire heartbeat lock (for main app "작은 자리 보기" check)
   await _acquireOverlayLock(prefs);
@@ -257,6 +266,8 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   Timer? _saveTimer;
   Timer? _refreshTimer;
   late int _currentNutrients;
+  bool _showNutrientGlow = false;
+  Timer? _glowTimer;
 
   @override
   void initState() {
@@ -281,9 +292,9 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
       if (fresh != _currentNutrients && mounted) {
         final increased = fresh > _currentNutrients;
         setState(() => _currentNutrients = fresh);
-        // Show transient calm feedback when nutrient increases
+        // Trigger subtle visual glow when nutrient increases
         if (increased) {
-          _showNutrientFeedback();
+          _triggerNutrientGlow();
         }
       }
       // Update heartbeat every cycle (1s is fine for a lightweight write)
@@ -291,26 +302,23 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     });
   }
 
-  /// Shows a brief calm message when a new nutrient is absorbed.
-  void _showNutrientFeedback() {
+  /// Triggers a brief warm glow effect when a new nutrient is absorbed.
+  void _triggerNutrientGlow() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          '작은 양분이 조용히 스며들고 있어요.',
-          style: TextStyle(fontSize: 12),
-        ),
-        duration: Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    _glowTimer?.cancel();
+    setState(() => _showNutrientGlow = true);
+    _glowTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() => _showNutrientGlow = false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _saveTimer?.cancel();
     _refreshTimer?.cancel();
+    _glowTimer?.cancel();
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -400,7 +408,10 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                 body: Stack(
                   children: [
                     // Garden visual — the main focus
-                    QuietGardenPatch(totalNutrients: _currentNutrients),
+                    QuietGardenPatch(
+                      totalNutrients: _currentNutrients,
+                      showGlow: _showNutrientGlow,
+                    ),
 
                   // Close button (top-right, subtle)
                   Positioned(

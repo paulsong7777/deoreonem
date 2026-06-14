@@ -7,16 +7,23 @@ import '../theme.dart';
 /// Not a game. Not a pet. A quiet reflection.
 class QuietGardenPatch extends StatefulWidget {
   final int totalNutrients;
+  final bool showGlow;
 
-  const QuietGardenPatch({super.key, required this.totalNutrients});
+  const QuietGardenPatch({
+    super.key,
+    required this.totalNutrients,
+    this.showGlow = false,
+  });
 
   @override
   State<QuietGardenPatch> createState() => _QuietGardenPatchState();
 }
 
 class _QuietGardenPatchState extends State<QuietGardenPatch>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _glowController;
+  late final Animation<double> _glowOpacity;
 
   @override
   void initState() {
@@ -25,11 +32,29 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
       vsync: this,
       duration: const Duration(seconds: 5),
     )..repeat(reverse: true);
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _glowOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.4), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.4, end: 0.0), weight: 70),
+    ]).animate(CurvedAnimation(parent: _glowController, curve: Curves.easeOut));
+  }
+
+  @override
+  void didUpdateWidget(covariant QuietGardenPatch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showGlow && !oldWidget.showGlow) {
+      _glowController.forward(from: 0.0);
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -58,48 +83,84 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          const Spacer(flex: 2),
-          SizedBox(
-            width: 100,
-            height: 90,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              SizedBox(
+                width: 100,
+                height: 90,
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    final angle = stage == PlantStage.seed
+                        ? 0.0
+                        : (_controller.value - 0.5) * 0.04; // ~2.3 degrees max
+                    return Transform.rotate(
+                      angle: angle,
+                      alignment: Alignment.bottomCenter,
+                      child: CustomPaint(
+                        size: const Size(100, 90),
+                        painter: _GardenPainter(stage: stage),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const Spacer(flex: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  getPotSignalMessage(widget.totalNutrients),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.secondaryText.withValues(alpha: 0.8),
+                    decoration: TextDecoration.none,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+          // Subtle warm glow around ground area when nutrients increase
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
             child: AnimatedBuilder(
-              animation: _controller,
+              animation: _glowOpacity,
               builder: (context, child) {
-                final angle = stage == PlantStage.seed
-                    ? 0.0
-                    : (_controller.value - 0.5) * 0.04; // ~2.3 degrees max
-                return Transform.rotate(
-                  angle: angle,
-                  alignment: Alignment.bottomCenter,
-                  child: CustomPaint(
-                    size: const Size(100, 90),
-                    painter: _GardenPainter(stage: stage),
+                if (_glowOpacity.value <= 0.01) {
+                  return const SizedBox.shrink();
+                }
+                return Center(
+                  child: Container(
+                    width: 90,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(45),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFE8D5B7)
+                              .withValues(alpha: _glowOpacity.value),
+                          blurRadius: 24,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
           ),
-          const Spacer(flex: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              getPotSignalMessage(widget.totalNutrients),
-              style: TextStyle(
-                fontSize: 10,
-                color: AppTheme.secondaryText.withValues(alpha: 0.8),
-                decoration: TextDecoration.none,
-                fontWeight: FontWeight.w400,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );

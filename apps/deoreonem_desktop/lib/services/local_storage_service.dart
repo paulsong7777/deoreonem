@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
@@ -14,26 +15,51 @@ class LocalStorageService {
 
   Future<void> saveLastCompletedSession(
       String sessionId, DateTime completedAt) async {
-    final current = getRecentCompletedSessionIds();
+    // Always merge BOTH sources to prevent data loss across sessions
+    final merged = _getMergedSessionIds();
     // Remove if already exists (avoid duplicates)
-    current.remove(sessionId);
+    merged.remove(sessionId);
     // Add to front (newest first)
-    current.insert(0, sessionId);
+    merged.insert(0, sessionId);
     // Trim to max
-    if (current.length > _maxRecentSessions) {
-      current.removeRange(_maxRecentSessions, current.length);
+    if (merged.length > _maxRecentSessions) {
+      merged.removeRange(_maxRecentSessions, merged.length);
     }
-    await _prefs.setStringList(_keyRecentSessions, current);
-    // Also persist to file for cross-process reliability
-    _writeSessionIdsFile(current);
+    // Write to both stores atomically
+    await _prefs.setStringList(_keyRecentSessions, merged);
+    _writeSessionIdsFile(merged);
   }
 
   List<String> getRecentCompletedSessionIds() {
+    return _getMergedSessionIds();
+  }
+
+  /// Reads from both SharedPreferences AND file, merges/deduplicates.
+  /// Maintains newest-first order from SharedPreferences as primary,
+  /// then appends any IDs only found in the file fallback.
+  List<String> _getMergedSessionIds() {
     final fromPrefs = List<String>.from(
         _prefs.getStringList(_keyRecentSessions) ?? []);
-    if (fromPrefs.isNotEmpty) return fromPrefs;
-    // Fallback: read from file if SharedPreferences is empty
-    return _readSessionIdsFromFile();
+    final fromFile = _readSessionIdsFromFile();
+
+    if (fromPrefs.isEmpty && fromFile.isEmpty) return [];
+    if (fromFile.isEmpty) return List<String>.from(fromPrefs);
+    if (fromPrefs.isEmpty) return List<String>.from(fromFile);
+
+    // Merge: prefs is primary order, append file-only entries
+    final seen = <String>{};
+    final merged = <String>[];
+    for (final id in fromPrefs) {
+      if (seen.add(id)) merged.add(id);
+    }
+    for (final id in fromFile) {
+      if (seen.add(id)) merged.add(id);
+    }
+    // Trim to max
+    if (merged.length > _maxRecentSessions) {
+      return merged.sublist(0, _maxRecentSessions);
+    }
+    return merged;
   }
 
   /// Returns the most recent completed session ID, or null
@@ -64,6 +90,11 @@ class LocalStorageService {
   }
 
   Future<void> setReviewableEntrustedCount(int count) async {
+    // Only update the reviewable count — never touch session IDs here.
+    assert(() {
+      debugPrint('[LocalStorage] setReviewableEntrustedCount($count)');
+      return true;
+    }());
     await _prefs.setInt(_keyReviewableCount, count);
   }
 
@@ -88,11 +119,17 @@ class LocalStorageService {
     try {
       final file = _getSessionIdsFile();
       if (file == null) return;
-      file.writeAsStringSync(jsonEncode({
+      final content = jsonEncode({
         'sessionIds': sessionIds,
         'updatedAt': DateTime.now().toIso8601String(),
-      }));
-    } catch (_) {}
+      });
+      // Atomic-safe: write to temp file, then rename to prevent partial writes
+      final tempFile = File('${file.path}.tmp');
+      tempFile.writeAsStringSync(content, flush: true);
+      tempFile.renameSync(file.path);
+    } catch (_) {
+      // Non-critical: SharedPreferences is still the primary store
+    }
   }
 
   static List<String> _readSessionIdsFromFile() {
