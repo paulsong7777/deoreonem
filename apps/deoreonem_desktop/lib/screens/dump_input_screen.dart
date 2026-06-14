@@ -77,8 +77,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     final itemsState = ref.watch(itemsProvider);
     final savedItems = itemsState.valueOrNull ?? [];
     final hasError = itemsState.hasError;
-    final lines = _parseLines(_controller.text);
-    final hasContent = lines.isNotEmpty || savedItems.isNotEmpty;
 
     return Scaffold(
       body: Padding(
@@ -132,7 +130,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   )),
               const Divider(height: 24),
             ],
-            // Multiline input area
+            // Multiline input area — no onChanged to avoid Korean IME crash
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -150,7 +148,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   ),
                   contentPadding: const EdgeInsets.all(16),
                 ),
-                onChanged: (_) => setState(() {}), // Rebuild to update button state
               ),
             ),
             if (hasError) ...[
@@ -161,16 +158,24 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: hasContent && !_isSaving ? _navigateToClassify : null,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('분류하기'),
+            // Use ValueListenableBuilder to enable/disable button without rebuilding TextField
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (context, value, _) {
+                final lines = _parseLines(value.text);
+                final hasContent = lines.isNotEmpty || savedItems.isNotEmpty;
+                return ElevatedButton(
+                  onPressed: hasContent && !_isSaving ? _navigateToClassify : null,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('분류하기'),
+                );
+              },
             ),
           ],
         ),

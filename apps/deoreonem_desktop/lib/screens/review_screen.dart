@@ -27,6 +27,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   final Set<String> _removingIds = {};
   bool _isStarting = false;
   bool _hasConvertedWorryToNutrient = false;
+  String _selectedDrawer = '감정'; // Default drawer tab
 
   static const Map<String, String> categoryLabels = {
     'TOMORROW': '내일 다시 볼 것',
@@ -36,10 +37,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     'WORRY_ONLY': '걱정만 남은 것',
   };
 
-  static const Map<String, List<String>> _drawerGroups = {
-    '일정 서랍': ['TOMORROW', 'THIS_WEEK', 'WAITING'],
-    '메모 서랍': ['MEMO'],
-    '감정 서랍': ['WORRY_ONLY'],
+  static const Map<String, List<String>> _drawerCategories = {
+    '일정': ['TOMORROW', 'THIS_WEEK', 'WAITING'],
+    '메모': ['MEMO'],
+    '감정': ['WORRY_ONLY'],
   };
 
   static const Set<String> _visibleCategories = {
@@ -84,9 +85,25 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             .where((i) => i.category != null && _visibleCategories.contains(i.category))
             .toList();
         ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
+
+        // Set default drawer based on content
+        final hasWorry = visible.any((i) => i.category == 'WORRY_ONLY');
+        final hasSchedule = visible.any((i) => ['TOMORROW', 'THIS_WEEK', 'WAITING'].contains(i.category));
+        final hasMemo = visible.any((i) => i.category == 'MEMO');
+
+        String defaultDrawer = '감정';
+        if (hasWorry) {
+          defaultDrawer = '감정';
+        } else if (hasSchedule) {
+          defaultDrawer = '일정';
+        } else if (hasMemo) {
+          defaultDrawer = '메모';
+        }
+
         setState(() {
           _items = allItems;
           _state = _ReviewState.items;
+          _selectedDrawer = defaultDrawer;
         });
       }
     }
@@ -110,13 +127,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         );
       }
     }
-  }
-
-  void _keepItem(ItemModel item, String message) {
-    // No backend call — just show a calm SnackBar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
   }
 
   Future<void> _closeItem(ItemModel item) async {
@@ -169,12 +179,46 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
+  Future<void> _resetWorryFade(ItemModel item) async {
+    await ref.read(localStorageProvider).resetWorryFade(item.itemId);
+    setState(() {}); // Refresh fade labels
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('감정 서랍에 다시 3일 맡겨두었습니다.'), duration: Duration(seconds: 2)),
+      );
+    }
+  }
+
+  String _worryFadeLabel(ItemModel item) {
+    final storage = ref.read(localStorageProvider);
+    final resets = storage.getWorryFadeResets();
+    final baseTime = resets[item.itemId] ?? item.createdAt;
+    final fadeAt = baseTime.add(const Duration(days: 3));
+    final now = DateTime.now();
+    final remaining = fadeAt.difference(now);
+
+    if (remaining.inDays >= 3) return '3일 뒤 흐려짐';
+    if (remaining.inDays == 2) return '2일 뒤 흐려짐';
+    if (remaining.inDays == 1) return '내일쯤 흐려짐';
+    if (remaining.isNegative) return '흐려지는 중';
+    return '오늘 조용히 흐려짐';
+  }
+
   void _keepEntrusted() {
     setState(() => _state = _ReviewState.entrusted);
   }
 
   void _closeApp() {
     exit(0);
+  }
+
+  int _getCountForDrawer(String drawer, Map<String, List<ItemModel>> grouped) {
+    final categories = _drawerCategories[drawer] ?? [];
+    int count = 0;
+    for (final cat in categories) {
+      count += grouped[cat]?.length ?? 0;
+    }
+    return count;
   }
 
   @override
@@ -338,25 +382,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     return '${createdAt.month}월 ${createdAt.day}일 맡김';
   }
 
-  Widget _buildItemCard(BuildContext context, ItemModel item, bool isWorry, bool isMemo, bool isSchedule) {
+  Widget _buildItemCard(BuildContext context, ItemModel item, {required bool isWorry, required bool isMemo, required bool isSchedule}) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 4, left: 8),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(item.content, style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 4),
-            Text(_entrustedLabel(item.createdAt),
-                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
             if (isWorry) ...[
               const SizedBox(height: 4),
-              Text('이 걱정은 3일 뒤 조용히 사라집니다.\n지금 해결하지 않아도 괜찮아요.',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.secondaryText,
-                      height: 1.4)),
+              Text(_worryFadeLabel(item),
+                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+            ] else ...[
+              const SizedBox(height: 4),
+              Text(_entrustedLabel(item.createdAt),
+                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
             ],
             const SizedBox(height: 4),
             if (_removingIds.contains(item.itemId))
@@ -365,57 +407,50 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2))
             else
-              _buildActions(item, isWorry, isMemo, isSchedule),
+              _buildActions(item, isWorry: isWorry, isMemo: isMemo, isSchedule: isSchedule),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActions(ItemModel item, bool isWorry, bool isMemo, bool isSchedule) {
+  Widget _buildActions(ItemModel item, {required bool isWorry, required bool isMemo, required bool isSchedule}) {
     if (isSchedule) {
+      // Single action: "확인했어요" — closes item, no nutrient shown
       return Row(
         children: [
           TextButton(
-            onPressed: () => _keepItem(item, '일정 서랍에 그대로 두었습니다.'),
-            child: Text('나중에 보기',
-                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-          ),
-          TextButton(
             onPressed: () => _closeItem(item),
-            child: Text('오늘은 닫기',
+            child: Text('확인했어요',
                 style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
           ),
         ],
       );
     }
     if (isMemo) {
+      // Single action: "보관하기" — closes item
+      // TODO: Future — link to notebook feature
       return Row(
         children: [
           TextButton(
-            onPressed: () => _keepItem(item, '메모 서랍에 조용히 보관했습니다.'),
-            child: Text('보관하기',
-                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
-          ),
-          TextButton(
             onPressed: () => _closeItem(item),
-            child: Text('닫기',
+            child: Text('보관하기',
                 style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
           ),
         ],
       );
     }
-    // Worry
+    // Worry — two actions
     return Row(
       children: [
         TextButton(
-          onPressed: () => _keepItem(item, '감정 서랍에 조금 더 맡겨두었습니다.'),
-          child: Text('조금 더 맡겨두기',
+          onPressed: () => _letGoWorry(item),
+          child: Text('이 걱정 내려놓기',
               style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
         ),
         TextButton(
-          onPressed: () => _letGoWorry(item),
-          child: Text('이 걱정 내려놓기',
+          onPressed: () => _resetWorryFade(item),
+          child: Text('다시 3일 맡겨두기',
               style: TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
         ),
       ],
@@ -451,52 +486,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              '잠시 맡겨둔 서랍을 확인합니다.',
+              '필요한 서랍만 열어 확인합니다.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
+            // Drawer tab selector
+            _buildDrawerTabs(grouped),
+            const SizedBox(height: 16),
+            // Drawer content
             Expanded(
-              child: ListView(
-                children: _drawerGroups.entries.where((drawer) {
-                  return drawer.value.any((cat) => grouped.containsKey(cat));
-                }).expand((drawer) {
-                  return [
-                    // Drawer heading
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 4),
-                      child: Text(drawer.key,
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryText)),
-                    ),
-                    // Subcategories within this drawer
-                    ...drawer.value
-                        .where((cat) => grouped.containsKey(cat))
-                        .expand((cat) {
-                      final label = categoryLabels[cat] ?? cat;
-                      final isWorry = cat == 'WORRY_ONLY';
-                      final isMemo = cat == 'MEMO';
-                      final isSchedule = cat == 'TOMORROW' ||
-                          cat == 'THIS_WEEK' ||
-                          cat == 'WAITING';
-                      return [
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(left: 8, top: 8, bottom: 4),
-                          child: Text(label,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.secondaryText)),
-                        ),
-                        ...grouped[cat]!.map((item) => _buildItemCard(
-                            context, item, isWorry, isMemo, isSchedule)),
-                      ];
-                    }),
-                  ];
-                }).toList(),
-              ),
+              child: _buildDrawerContent(grouped),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -517,6 +516,82 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDrawerTabs(Map<String, List<ItemModel>> grouped) {
+    return Row(
+      children: ['일정', '메모', '감정'].map((tab) {
+        final count = _getCountForDrawer(tab, grouped);
+        final isSelected = _selectedDrawer == tab;
+        return Expanded(
+          child: GestureDetector(
+            onTap: count > 0 ? () => setState(() => _selectedDrawer = tab) : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected ? AppTheme.accent : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+              child: Text(
+                '$tab $count',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? AppTheme.primaryText : AppTheme.secondaryText,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDrawerContent(Map<String, List<ItemModel>> grouped) {
+    final categories = _drawerCategories[_selectedDrawer] ?? [];
+    final isWorryDrawer = _selectedDrawer == '감정';
+    final isMemoDrawer = _selectedDrawer == '메모';
+    final isScheduleDrawer = _selectedDrawer == '일정';
+
+    final drawerItems = <ItemModel>[];
+    for (final cat in categories) {
+      drawerItems.addAll(grouped[cat] ?? []);
+    }
+
+    if (drawerItems.isEmpty) {
+      return Center(
+        child: Text(
+          '이 서랍은 비어 있습니다.',
+          style: TextStyle(fontSize: 13, color: AppTheme.secondaryText),
+        ),
+      );
+    }
+
+    return ListView(
+      children: [
+        // Emotion drawer header
+        if (isWorryDrawer)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              '걱정은 시간이 지나면 조용히 흐려집니다. 지금 해결하지 않아도 괜찮아요.',
+              style: TextStyle(fontSize: 12, color: AppTheme.secondaryText, height: 1.4),
+            ),
+          ),
+        ...drawerItems.map((item) => _buildItemCard(
+          context,
+          item,
+          isWorry: isWorryDrawer,
+          isMemo: isMemoDrawer,
+          isSchedule: isScheduleDrawer,
+        )),
+      ],
     );
   }
 }

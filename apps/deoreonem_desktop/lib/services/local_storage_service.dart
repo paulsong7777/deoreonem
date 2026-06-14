@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
   static const _keyRecentSessions = 'recent_completed_session_ids';
   static const _maxRecentSessions = 7;
   static const _keyReviewableCount = 'reviewable_entrusted_count';
+  static const _keyWorryFadeResets = 'worry_fade_resets';
 
   final SharedPreferences _prefs;
 
@@ -50,5 +52,23 @@ class LocalStorageService {
 
   Future<void> setReviewableEntrustedCount(int count) async {
     await _prefs.setInt(_keyReviewableCount, count);
+  }
+
+  // --- Worry Fade Resets ---
+
+  Map<String, DateTime> getWorryFadeResets() {
+    final json = _prefs.getString(_keyWorryFadeResets);
+    if (json == null) return {};
+    final map = Map<String, String>.from(jsonDecode(json) as Map);
+    return map.map((k, v) => MapEntry(k, DateTime.parse(v)));
+  }
+
+  Future<void> resetWorryFade(String itemId) async {
+    final resets = getWorryFadeResets();
+    resets[itemId] = DateTime.now();
+    await _prefs.setString(
+      _keyWorryFadeResets,
+      jsonEncode(resets.map((k, v) => MapEntry(k, v.toIso8601String()))),
+    );
   }
 }
