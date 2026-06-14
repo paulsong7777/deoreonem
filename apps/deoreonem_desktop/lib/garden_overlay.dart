@@ -28,9 +28,35 @@ bool isValidOverlayPosition(double x, double y) {
 }
 
 /// Checks if a garden overlay instance is currently running.
-/// Returns false if lock is stale (heartbeat older than threshold).
+/// Uses exclusive file lock probe first, falls back to heartbeat check.
 Future<bool> isGardenOverlayRunning(SharedPreferences prefs) async {
-  await prefs.reload();
+  // Try file lock probe (most reliable)
+  try {
+    final lockFile = _getOverlayLockFile();
+    if (lockFile.existsSync()) {
+      final handle = lockFile.openSync(mode: FileMode.write);
+      try {
+        handle.lockSync(FileLock.exclusive);
+        // Lock acquired — no overlay running. Release immediately.
+        handle.unlockSync();
+        handle.closeSync();
+        // Clean up stale heartbeat if any
+        await prefs.setBool(_keyOverlayRunning, false);
+        return false;
+      } catch (_) {
+        // Lock failed — overlay IS running
+        handle.closeSync();
+        return true;
+      }
+    }
+  } catch (_) {
+    // File lock not available — fall through to heartbeat
+  }
+
+  // Fallback: heartbeat-based check
+  try {
+    await prefs.reload();
+  } catch (_) {}
   final running = prefs.getBool(_keyOverlayRunning) ?? false;
   if (!running) return false;
 
@@ -60,14 +86,88 @@ Future<void> _releaseOverlayLock(SharedPreferences prefs) async {
   await prefs.remove(_keyOverlayHeartbeat);
 }
 
+// --- Exclusive file lock for true single instance ---
+
+/// Returns the lock file path next to the executable.
+File _getOverlayLockFile() {
+  final exeDir = File(Platform.resolvedExecutable).parent.path;
+  return File('$exeDir/garden_overlay.lock');
+}
+
+/// Attempts to acquire an exclusive file lock.
+/// Returns the RandomAccessFile handle if successful (keep open for lifetime).
+/// Returns null if another instance holds the lock.
+Future<RandomAccessFile?> _acquireExclusiveOverlayLock() async {
+  try {
+    final lockFile = _getOverlayLockFile();
+    // Create the file if it doesn't exist
+    if (!lockFile.existsSync()) {
+      lockFile.writeAsStringSync('');
+    }
+    final handle = lockFile.openSync(mode: FileMode.write);
+    try {
+      handle.lockSync(FileLock.exclusive);
+      // Write PID for debugging
+      handle.writeStringSync('${pid}\n${DateTime.now().toIso8601String()}');
+      handle.flushSync();
+      return handle;
+    } catch (_) {
+      // Lock failed — another process holds it
+      handle.closeSync();
+      return null;
+    }
+  } catch (_) {
+    // File system error — fall back to allowing launch
+    // (better to allow a potential duplicate than block all launches)
+    return null;
+  }
+}
+
+/// Releases the exclusive file lock.
+void _releaseExclusiveOverlayLock(RandomAccessFile? handle) {
+  try {
+    if (handle != null) {
+      handle.unlockSync();
+      handle.closeSync();
+    }
+  } catch (_) {}
+}
+
 Future<void> runGardenOverlay() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
 
-  // Acquire instance lock
+  // --- True single instance: exclusive file lock ---
+  final lockHandle = await _acquireExclusiveOverlayLock();
+  if (lockHandle == null) {
+    // Another overlay is running OR lock file not available.
+    // Check if lock file exists — if it does, another instance holds it.
+    try {
+      final lockFile = _getOverlayLockFile();
+      if (lockFile.existsSync()) {
+        // Lock file exists but we couldn't acquire → another instance running
+        exit(0);
+      }
+    } catch (_) {}
+    // Lock file doesn't exist or we can't access it — proceed anyway
+  }
+
+  // Acquire heartbeat lock (for main app "작은 자리 보기" check)
   await _acquireOverlayLock(prefs);
+
+  // --- Read initial garden state immediately from file ---
+  // This ensures the first render shows the correct growth stage.
+  int initialNutrients;
+  final fromFile = LocalStorageService.readGardenStateFromFile();
+  if (fromFile != null) {
+    initialNutrients = fromFile;
+  } else {
+    // File missing or corrupt — use SharedPreferences
+    await prefs.reload();
+    initialNutrients = prefs.getInt('total_worry_nutrients') ?? 0;
+  }
 
   const windowSize = Size(_windowWidth, _windowHeight);
 
@@ -102,23 +202,34 @@ Future<void> runGardenOverlay() async {
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],
-    child: _GardenOverlayApp(prefs: prefs),
+    child: _GardenOverlayApp(
+      prefs: prefs,
+      initialNutrients: initialNutrients,
+      lockHandle: lockHandle,
+    ),
   ));
 }
 
 class _GardenOverlayApp extends ConsumerWidget {
   final SharedPreferences prefs;
+  final int initialNutrients;
+  final RandomAccessFile? lockHandle;
 
-  const _GardenOverlayApp({required this.prefs});
+  const _GardenOverlayApp({
+    required this.prefs,
+    required this.initialNutrients,
+    this.lockHandle,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final storage = ref.watch(localStorageProvider);
-    final nutrients = storage.totalWorryNutrients;
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: _GardenOverlayHome(totalNutrients: nutrients, prefs: prefs),
+      home: _GardenOverlayHome(
+        totalNutrients: initialNutrients,
+        prefs: prefs,
+        lockHandle: lockHandle,
+      ),
     );
   }
 }
@@ -126,8 +237,13 @@ class _GardenOverlayApp extends ConsumerWidget {
 class _GardenOverlayHome extends StatefulWidget {
   final int totalNutrients;
   final SharedPreferences prefs;
+  final RandomAccessFile? lockHandle;
 
-  const _GardenOverlayHome({required this.totalNutrients, required this.prefs});
+  const _GardenOverlayHome({
+    required this.totalNutrients,
+    required this.prefs,
+    this.lockHandle,
+  });
 
   @override
   State<_GardenOverlayHome> createState() => _GardenOverlayHomeState();
@@ -187,6 +303,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
 
   void _closeOverlay() async {
     await _releaseOverlayLock(widget.prefs);
+    _releaseExclusiveOverlayLock(widget.lockHandle);
     exit(0);
   }
 
