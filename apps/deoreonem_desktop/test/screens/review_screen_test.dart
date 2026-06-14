@@ -359,7 +359,9 @@ void main() {
       expect(find.text('걱정 항목'), findsOneWidget);
 
       await tester.tap(find.text('이 걱정 내려놓기'));
-      await tester.pumpAndSettle();
+      // Use pump with duration instead of pumpAndSettle — SnackBar animation
+      // prevents settle until its full duration (3s) + exit animation completes.
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Item removed
       expect(find.text('걱정 항목'), findsNothing);

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageService {
@@ -98,7 +99,56 @@ class LocalStorageService {
     await _prefs.setStringList(_keyNutrientCreatedItemIds, ids);
 
     final current = totalWorryNutrients;
-    await _prefs.setInt(_keyTotalWorryNutrients, current + 1);
+    final newTotal = current + 1;
+    await _prefs.setInt(_keyTotalWorryNutrients, newTotal);
+
+    // Fire-and-forget: write garden state file for reliable cross-process sync.
+    // SharedPreferences.reload() is unreliable on Windows in some scenarios.
+    // Do NOT await — this is non-critical and must not block the caller.
+    _writeGardenStateFile(newTotal);
     return true;
+  }
+
+  /// Writes a simple JSON file that the garden overlay can poll directly.
+  void _writeGardenStateFile(int totalNutrients) {
+    try {
+      final file = _getGardenStateFile();
+      if (file == null) return;
+      file.writeAsString(
+        jsonEncode({'totalWorryNutrients': totalNutrients, 'updatedAt': DateTime.now().toIso8601String()}),
+      );
+    } catch (_) {
+      // Non-critical: overlay falls back to SharedPreferences
+    }
+  }
+
+  /// Returns the path to garden_state.json next to the executable, or null in test.
+  static File? _getGardenStateFile() {
+    try {
+      final exePath = Platform.resolvedExecutable;
+      // In test environments, resolvedExecutable may point to dart test runner —
+      // skip file sync in that case.
+      if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
+        return null;
+      }
+      final exeDir = File(exePath).parent.path;
+      return File('$exeDir/garden_state.json');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Read total nutrients from the garden state file (cross-process sync).
+  /// Returns null if file doesn't exist or is unreadable.
+  static int? readGardenStateFromFile() {
+    try {
+      final file = _getGardenStateFile();
+      if (file == null || !file.existsSync()) return null;
+      final content = file.readAsStringSync();
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return map['totalWorryNutrients'] as int?;
+    } catch (_) {
+      return null;
+    }
   }
 }

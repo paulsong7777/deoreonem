@@ -39,16 +39,17 @@ void main() {
     );
   }
 
-  testWidgets('DumpInputScreen has title, multiline input, and disabled next button',
+  testWidgets('DumpInputScreen has title, multiline input, and always-enabled button',
       (tester) async {
     await tester.pumpWidget(buildWidget());
 
     expect(find.text('오늘 남은 것들'), findsOneWidget);
     expect(find.textContaining('줄마다 적어보세요'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
-    // Next button should be disabled when input is empty
+    // Button is always enabled (validates on click, not on text change)
+    // This avoids Korean IME crash from controller listeners
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull);
   });
 
   testWidgets('Multiline text enables classify button without API call',

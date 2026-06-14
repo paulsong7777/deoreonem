@@ -7,15 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'providers/local_storage_provider.dart';
+import 'services/local_storage_service.dart';
 import 'widgets/quiet_garden_patch.dart';
 import 'theme.dart';
+import 'main.dart' show isMainAppRunning;
 
 const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
 const _keyOverlayRunning = 'garden_overlay_running';
 const _keyOverlayHeartbeat = 'garden_overlay_heartbeat';
-const _windowWidth = 220.0;
-const _windowHeight = 160.0;
+const _windowWidth = 260.0;
+const _windowHeight = 190.0;
 const _staleThresholdSeconds = 15;
 
 /// Validates that a window position is within reasonable bounds.
@@ -143,12 +145,20 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     _currentNutrients = widget.totalNutrients;
     windowManager.addListener(this);
 
-    // Periodically refresh nutrient state from SharedPreferences
-    // to reflect changes made by the main app process.
+    // Periodically refresh nutrient state.
+    // Uses file-based sync first (reliable on Windows), falls back to SharedPreferences.
     // Also update heartbeat for instance lock.
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      await widget.prefs.reload();
-      final fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
+      int fresh;
+      // Try file-based sync first (written by main app after worry let-go)
+      final fromFile = LocalStorageService.readGardenStateFromFile();
+      if (fromFile != null) {
+        fresh = fromFile;
+      } else {
+        // Fall back to SharedPreferences reload
+        await widget.prefs.reload();
+        fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
+      }
       if (fresh != _currentNutrients && mounted) {
         setState(() => _currentNutrients = fresh);
       }
@@ -181,6 +191,19 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   }
 
   void _openMainApp() async {
+    // Prevent duplicate main app windows
+    if (await isMainAppRunning(widget.prefs)) {
+      // Main app is already running — show subtle message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('덜어냄이 이미 열려 있어요.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
     final exePath = Platform.resolvedExecutable;
     await Process.start(exePath, [], mode: ProcessStartMode.detached);
   }
@@ -228,11 +251,8 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                 backgroundColor: Colors.transparent,
                 body: Stack(
                   children: [
-                    // Garden visual
-                    Tooltip(
-                      message: '두 번 클릭해 덜어냄 열기',
-                      child: QuietGardenPatch(totalNutrients: _currentNutrients),
-                    ),
+                    // Garden visual — the main focus, no intrusive tooltip
+                    QuietGardenPatch(totalNutrients: _currentNutrients),
 
                   // Close button (top-right, subtle)
                   Positioned(
@@ -293,17 +313,17 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     ),
                   ),
 
-                  // Drag hint (bottom center, very subtle)
+                  // Hint (bottom center, very subtle, small)
                   Positioned(
                     bottom: 4,
                     left: 0,
                     right: 0,
                     child: Center(
                       child: Text(
-                        '드래그로 이동',
+                        '두 번 클릭해 덜어냄 열기',
                         style: TextStyle(
                           fontSize: 9,
-                          color: AppTheme.secondaryText.withValues(alpha: 0.4),
+                          color: AppTheme.secondaryText.withValues(alpha: 0.35),
                           decoration: TextDecoration.none,
                           fontWeight: FontWeight.w400,
                         ),

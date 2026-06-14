@@ -31,13 +31,23 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         .toList();
   }
 
-  /// Save all lines to API and navigate to classify
+  /// Save all lines to API and navigate to classify.
+  /// Validates on click — if nothing to save, shows gentle feedback.
   Future<void> _navigateToClassify() async {
     if (_isSaving) return;
 
     final lines = _parseLines(_controller.text);
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
-    if (lines.isEmpty && savedItems.isEmpty) return;
+    if (lines.isEmpty && savedItems.isEmpty) {
+      // Nothing entered yet — gentle nudge, no crash
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('적어놓은 내용이 없어요.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
@@ -158,24 +168,22 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            // Use ValueListenableBuilder to enable/disable button without rebuilding TextField
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _controller,
-              builder: (context, value, _) {
-                final lines = _parseLines(value.text);
-                final hasContent = lines.isNotEmpty || savedItems.isNotEmpty;
-                return ElevatedButton(
-                  onPressed: hasContent && !_isSaving ? _navigateToClassify : null,
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('분류하기'),
-                );
-              },
+            // Button always enabled — validates on click only.
+            // IMPORTANT: Do NOT use ValueListenableBuilder or onChanged with
+            // TextEditingController. Listening to the controller causes widget
+            // rebuilds during IME composition, which crashes Korean (한글) input
+            // on Windows. The button stays enabled; empty-input is handled
+            // gracefully in _navigateToClassify.
+            ElevatedButton(
+              onPressed: _isSaving ? null : _navigateToClassify,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('분류하기'),
             ),
           ],
         ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +7,30 @@ import 'router.dart';
 import 'theme.dart';
 import 'providers/local_storage_provider.dart';
 import 'garden_overlay.dart';
+
+const _keyMainAppRunning = 'main_app_running';
+const _keyMainAppHeartbeat = 'main_app_heartbeat';
+const _mainAppStaleThresholdSeconds = 15;
+
+/// Checks if the main app is already running (heartbeat-based guard).
+Future<bool> isMainAppRunning(SharedPreferences prefs) async {
+  await prefs.reload();
+  final running = prefs.getBool(_keyMainAppRunning) ?? false;
+  if (!running) return false;
+
+  final heartbeat = prefs.getString(_keyMainAppHeartbeat);
+  if (heartbeat == null) return false;
+
+  final lastBeat = DateTime.tryParse(heartbeat);
+  if (lastBeat == null) return false;
+
+  final age = DateTime.now().difference(lastBeat).inSeconds;
+  if (age > _mainAppStaleThresholdSeconds) {
+    await prefs.setBool(_keyMainAppRunning, false);
+    return false;
+  }
+  return true;
+}
 
 void main(List<String> args) async {
   // Garden overlay mode
@@ -16,6 +42,15 @@ void main(List<String> args) async {
   // Normal app mode
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+
+  // Acquire main app lock
+  await prefs.setBool(_keyMainAppRunning, true);
+  await prefs.setString(_keyMainAppHeartbeat, DateTime.now().toIso8601String());
+
+  // Heartbeat timer — keep lock alive
+  Timer.periodic(const Duration(seconds: 5), (_) async {
+    await prefs.setString(_keyMainAppHeartbeat, DateTime.now().toIso8601String());
+  });
 
   runApp(ProviderScope(
     overrides: [
