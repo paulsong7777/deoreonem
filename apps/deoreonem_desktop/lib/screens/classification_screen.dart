@@ -85,10 +85,10 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
             context.go('/first-action');
           }
         }
-      } catch (_) {
+      } catch (e) {
         if (mounted) {
           setState(() => _isClassifying = false);
-          _showClassifyError();
+          _showClassifyError(e);
         }
       }
       return;
@@ -118,19 +118,21 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
           context.go('/first-action');
         }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _isClassifying = false);
-        _showClassifyError();
+        _showClassifyError(e);
       }
     }
   }
 
-  void _showClassifyError() {
+  void _showClassifyError([Object? error]) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('분류를 저장하지 못했어요. 다시 시도해 주세요.'),
-        duration: Duration(seconds: 3),
+      SnackBar(
+        content: Text(error != null
+            ? '분류를 저장하지 못했어요: $error'
+            : '분류를 저장하지 못했어요. 다시 시도해 주세요.'),
+        duration: const Duration(seconds: 4),
       ),
     );
   }

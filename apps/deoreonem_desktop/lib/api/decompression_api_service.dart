@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'api_exception.dart';
 import '../models/session_model.dart';
 import '../models/item_model.dart';
@@ -77,6 +78,11 @@ class DecompressionApiService {
       final response = await call();
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
+      assert(() {
+        debugPrint('[API] DioException: type=${e.type} status=${e.response?.statusCode} url=${e.requestOptions.uri}');
+        debugPrint('[API] Response body: ${e.response?.data}');
+        return true;
+      }());
       if (e.response != null && e.response!.data is Map<String, dynamic>) {
         final data = e.response!.data as Map<String, dynamic>;
         if (data['error'] != null) {

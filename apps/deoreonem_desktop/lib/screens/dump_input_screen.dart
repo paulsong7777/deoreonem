@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
@@ -52,7 +53,16 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     }
 
     final session = ref.read(sessionProvider).valueOrNull;
-    if (session == null) return;
+    if (session == null) {
+      debugPrint('[DumpInput] session is null — cannot save items');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('세션이 없어요. 처음부터 다시 시도해 주세요.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     if (lines.isEmpty) {
       // Nothing new to save, just navigate
@@ -75,9 +85,9 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         // Keep text on failure so user doesn't lose input
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('저장에 실패했어요. 다시 시도해 주세요.'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text('저장에 실패했어요: $e'),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

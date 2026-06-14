@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/decompression_api_service.dart';
 import '../models/session_model.dart';
@@ -16,8 +17,10 @@ class SessionNotifier extends StateNotifier<AsyncValue<SessionModel?>> {
     state = const AsyncValue.loading();
     try {
       final session = await _api.createSession();
+      assert(() { debugPrint('[SessionNotifier] createSession success: ${session.sessionId}'); return true; }());
       state = AsyncValue.data(session);
     } catch (e, st) {
+      assert(() { debugPrint('[SessionNotifier] createSession FAILED: $e'); return true; }());
       state = AsyncValue.error(e, st);
     }
   }
