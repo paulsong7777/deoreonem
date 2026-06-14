@@ -97,16 +97,30 @@ class _GardenOverlayHome extends StatefulWidget {
 class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     with WindowListener {
   Timer? _saveTimer;
+  Timer? _refreshTimer;
+  late int _currentNutrients;
 
   @override
   void initState() {
     super.initState();
+    _currentNutrients = widget.totalNutrients;
     windowManager.addListener(this);
+
+    // Periodically refresh nutrient state from SharedPreferences
+    // to reflect changes made by the main app process.
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      await widget.prefs.reload();
+      final fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
+      if (fresh != _currentNutrients && mounted) {
+        setState(() => _currentNutrients = fresh);
+      }
+    });
   }
 
   @override
   void dispose() {
     _saveTimer?.cancel();
+    _refreshTimer?.cancel();
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -171,7 +185,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
               body: Stack(
                 children: [
                   // Garden visual
-                  QuietGardenPatch(totalNutrients: widget.totalNutrients),
+                  QuietGardenPatch(totalNutrients: _currentNutrients),
 
                   // Close button (top-right, subtle)
                   Positioned(
