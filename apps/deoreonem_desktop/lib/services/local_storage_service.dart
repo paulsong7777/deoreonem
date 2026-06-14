@@ -24,11 +24,16 @@ class LocalStorageService {
       current.removeRange(_maxRecentSessions, current.length);
     }
     await _prefs.setStringList(_keyRecentSessions, current);
+    // Also persist to file for cross-process reliability
+    _writeSessionIdsFile(current);
   }
 
   List<String> getRecentCompletedSessionIds() {
-    return List<String>.from(
+    final fromPrefs = List<String>.from(
         _prefs.getStringList(_keyRecentSessions) ?? []);
+    if (fromPrefs.isNotEmpty) return fromPrefs;
+    // Fallback: read from file if SharedPreferences is empty
+    return _readSessionIdsFromFile();
   }
 
   /// Returns the most recent completed session ID, or null
@@ -49,10 +54,58 @@ class LocalStorageService {
     await _prefs.remove(_keyRecentSessions);
   }
 
-  int get reviewableEntrustedCount => _prefs.getInt(_keyReviewableCount) ?? 0;
+  int get reviewableEntrustedCount {
+    final fromPrefs = _prefs.getInt(_keyReviewableCount) ?? 0;
+    if (fromPrefs > 0) return fromPrefs;
+    // Fallback: if session IDs exist in file but count is 0, report positive
+    // so the review button shows (review screen will fetch actual items)
+    final sessionIds = getRecentCompletedSessionIds();
+    return sessionIds.isNotEmpty ? 1 : 0;
+  }
 
   Future<void> setReviewableEntrustedCount(int count) async {
     await _prefs.setInt(_keyReviewableCount, count);
+  }
+
+  // --- File-based session ID persistence ---
+  // SharedPreferences on Windows (registry-based) may not reliably persist
+  // across all launch scenarios (different exe paths, build vs ZIP, etc.)
+
+  static File? _getSessionIdsFile() {
+    try {
+      final exePath = Platform.resolvedExecutable;
+      if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
+        return null;
+      }
+      final exeDir = File(exePath).parent.path;
+      return File('$exeDir/completed_sessions.json');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _writeSessionIdsFile(List<String> sessionIds) {
+    try {
+      final file = _getSessionIdsFile();
+      if (file == null) return;
+      file.writeAsStringSync(jsonEncode({
+        'sessionIds': sessionIds,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }));
+    } catch (_) {}
+  }
+
+  static List<String> _readSessionIdsFromFile() {
+    try {
+      final file = _getSessionIdsFile();
+      if (file == null || !file.existsSync()) return [];
+      final content = file.readAsStringSync();
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      final ids = (map['sessionIds'] as List?)?.cast<String>() ?? [];
+      return ids;
+    } catch (_) {
+      return [];
+    }
   }
 
   // --- Worry Fade Resets ---

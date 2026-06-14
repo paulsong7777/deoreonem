@@ -34,8 +34,9 @@ Future<bool> isGardenOverlayRunning(SharedPreferences prefs) async {
   try {
     final lockFile = _getOverlayLockFile();
     if (lockFile.existsSync()) {
-      final handle = lockFile.openSync(mode: FileMode.write);
+      RandomAccessFile? handle;
       try {
+        handle = lockFile.openSync(mode: FileMode.append);
         handle.lockSync(FileLock.exclusive);
         // Lock acquired — no overlay running. Release immediately.
         handle.unlockSync();
@@ -43,9 +44,12 @@ Future<bool> isGardenOverlayRunning(SharedPreferences prefs) async {
         // Clean up stale heartbeat if any
         await prefs.setBool(_keyOverlayRunning, false);
         return false;
+      } on FileSystemException {
+        // Can't open or lock — overlay IS running
+        handle?.closeSync();
+        return true;
       } catch (_) {
-        // Lock failed — overlay IS running
-        handle.closeSync();
+        handle?.closeSync();
         return true;
       }
     }
@@ -68,7 +72,6 @@ Future<bool> isGardenOverlayRunning(SharedPreferences prefs) async {
 
   final age = DateTime.now().difference(lastBeat).inSeconds;
   if (age > _staleThresholdSeconds) {
-    // Stale lock — clear it
     await prefs.setBool(_keyOverlayRunning, false);
     return false;
   }
