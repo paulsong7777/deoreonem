@@ -190,10 +190,16 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     exit(0);
   }
 
+  bool _isLaunching = false;
+
   void _openMainApp() async {
+    // Debounce rapid clicks
+    if (_isLaunching) return;
+    _isLaunching = true;
+
     // Prevent duplicate main app windows
     if (await isMainAppRunning(widget.prefs)) {
-      // Main app is already running — show subtle message
+      _isLaunching = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -206,6 +212,9 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     }
     final exePath = Platform.resolvedExecutable;
     await Process.start(exePath, [], mode: ProcessStartMode.detached);
+
+    // Keep debounce for 3 seconds to prevent rapid spawn
+    Future.delayed(const Duration(seconds: 3), () => _isLaunching = false);
   }
 
   Future<void> _resetPosition() async {
@@ -218,11 +227,9 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     switch (value) {
       case 'open':
         _openMainApp();
-      case 'hide':
-        _closeOverlay();
       case 'reset_position':
         _resetPosition();
-      case 'quit':
+      case 'close':
         _closeOverlay();
     }
   }
@@ -298,16 +305,11 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                           height: 36,
                           child: Text('위치 초기화', style: TextStyle(fontSize: 13)),
                         ),
-                        const PopupMenuItem(
-                          value: 'hide',
-                          height: 36,
-                          child: Text('작은 자리 숨기기', style: TextStyle(fontSize: 13)),
-                        ),
                         const PopupMenuDivider(height: 1),
                         const PopupMenuItem(
-                          value: 'quit',
+                          value: 'close',
                           height: 36,
-                          child: Text('종료', style: TextStyle(fontSize: 13)),
+                          child: Text('작은 자리 닫기', style: TextStyle(fontSize: 13)),
                         ),
                       ],
                     ),
