@@ -221,12 +221,18 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
           autofocus: true,
           child: GestureDetector(
             onPanStart: (_) async => await windowManager.startDragging(),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Stack(
-                children: [
-                  // Garden visual
-                  QuietGardenPatch(totalNutrients: _currentNutrients),
+            onDoubleTap: _openMainApp,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Stack(
+                  children: [
+                    // Garden visual
+                    Tooltip(
+                      message: '두 번 클릭해 덜어냄 열기',
+                      child: QuietGardenPatch(totalNutrients: _currentNutrients),
+                    ),
 
                   // Close button (top-right, subtle)
                   Positioned(
@@ -307,6 +313,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),
