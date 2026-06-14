@@ -10,6 +10,7 @@ import '../providers/local_storage_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
+import '../services/plant_stage_helper.dart';
 
 enum _ReviewState { loading, error, items, entrusted, empty }
 
@@ -297,6 +298,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               Text(
                 '필요하면 새로 비워내고, 아니면 이대로 마쳐도 괜찮습니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              // Quiet pot signal
+              Text(
+                getPotSignalMessage(ref.read(localStorageProvider).totalWorryNutrients),
+                style: TextStyle(fontSize: 11, color: AppTheme.secondaryText.withOpacity(0.7)),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
