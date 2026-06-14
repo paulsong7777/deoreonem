@@ -164,7 +164,8 @@ Future<void> runGardenOverlay() async {
       exit(0);
     }
   } catch (_) {
-    // File system error — allow launch (better than blocking all launches)
+    // File system error — exit rather than allowing potential duplicates
+    exit(0);
   }
 
   WidgetsFlutterBinding.ensureInitialized();

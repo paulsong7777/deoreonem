@@ -9,6 +9,7 @@ import '../providers/local_storage_provider.dart';
 import '../providers/first_action_provider.dart';
 import '../garden_overlay.dart';
 import '../theme.dart';
+import '../build_info.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -115,11 +116,11 @@ class _StartScreenState extends ConsumerState<StartScreen> {
               ),
               const Spacer(),
               Text(
-                'v0.4.0-alpha',
+                'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(fontSize: 12),
+                    ?.copyWith(fontSize: 11, color: AppTheme.secondaryText),
               ),
             ],
           ),

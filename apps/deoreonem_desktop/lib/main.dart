@@ -73,7 +73,7 @@ bool _acquireMainAppLock() {
       return false;
     }
   } catch (_) {
-    return true; // file system error — allow launch
+    return false; // file system error — exit rather than allowing duplicates
   }
 }
 
@@ -150,16 +150,17 @@ void main(List<String> args) async {
 
   // Normal app mode
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Acquire main app exclusive lock FIRST (OS-level, released on process exit/crash)
+  final acquired = _acquireMainAppLock();
+  if (!acquired) {
+    exit(0); // Another main app instance is running or filesystem error
+  }
+
   final prefs = await SharedPreferences.getInstance();
 
   // One-time migration: move legacy files from exe directory to AppData
   _migrateLegacyFiles();
-
-  // Acquire main app exclusive lock (OS-level, released on process exit/crash)
-  final acquired = _acquireMainAppLock();
-  if (!acquired) {
-    exit(0); // Another main app instance is running
-  }
 
   // Acquire main app heartbeat (both file-based and SharedPreferences)
   await prefs.setBool(_keyMainAppRunning, true);

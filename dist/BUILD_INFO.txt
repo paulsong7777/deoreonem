@@ -1,0 +1,12 @@
+DeoReoNem MVP 0.4-alpha RC
+===========================
+Commit SHA: 50ffa9c
+Build Date: 2026-06-15 01:56:10
+App Version: 0.4.0-alpha RC
+Runtime Storage: %APPDATA%\ScopeWorks\DeoReoNem
+Release Build: apps/deoreonem_desktop/build/windows/x64/runner/Release/
+Installer: NOT BUILT — ISCC.exe not found
+
+To verify correct build:
+- Launch deoreonem_desktop.exe
+- Check StartScreen footer: "v0.4.0-alpha RC · 50ffa9c"
