@@ -9,6 +9,7 @@ import 'router.dart';
 import 'theme.dart';
 import 'providers/local_storage_provider.dart';
 import 'garden_overlay.dart';
+import 'services/runtime_paths.dart';
 
 const _keyMainAppRunning = 'main_app_running';
 const _keyMainAppHeartbeat = 'main_app_heartbeat';
@@ -17,16 +18,9 @@ const _mainAppStaleThresholdSeconds = 20;
 /// File-based main app heartbeat for reliable cross-process detection.
 /// SharedPreferences reload is unreliable across separate processes on Windows.
 File? _getMainAppHeartbeatFile() {
-  try {
-    final exePath = Platform.resolvedExecutable;
-    if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
-      return null;
-    }
-    final exeDir = File(exePath).parent.path;
-    return File('$exeDir/main_app_heartbeat.json');
-  } catch (_) {
-    return null;
-  }
+  final dir = getRuntimeDirectoryOrNull();
+  if (dir == null) return null;
+  return File('$dir\\main_app_heartbeat.json');
 }
 
 void _writeMainAppHeartbeat() {
@@ -49,18 +43,11 @@ void _clearMainAppHeartbeat() {
 
 // --- Exclusive file lock for main app single-instance detection ---
 
-/// Returns the main app lock file path next to the executable.
+/// Returns the main app lock file path in the runtime directory.
 File? _getMainAppLockFile() {
-  try {
-    final exePath = Platform.resolvedExecutable;
-    if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
-      return null;
-    }
-    final exeDir = File(exePath).parent.path;
-    return File('$exeDir/main_app.lock');
-  } catch (_) {
-    return null;
-  }
+  final dir = getRuntimeDirectoryOrNull();
+  if (dir == null) return null;
+  return File('$dir\\main_app.lock');
 }
 
 /// Global handle — kept open for process lifetime so lock is held.
@@ -165,8 +152,14 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
 
+  // One-time migration: move legacy files from exe directory to AppData
+  _migrateLegacyFiles();
+
   // Acquire main app exclusive lock (OS-level, released on process exit/crash)
-  _acquireMainAppLock();
+  final acquired = _acquireMainAppLock();
+  if (!acquired) {
+    exit(0); // Another main app instance is running
+  }
 
   // Acquire main app heartbeat (both file-based and SharedPreferences)
   await prefs.setBool(_keyMainAppRunning, true);
@@ -185,6 +178,43 @@ void main(List<String> args) async {
     ],
     child: const DeoreonemApp(),
   ));
+}
+
+/// Migrates legacy runtime files from next to the executable to the AppData directory.
+/// Only runs once — if legacy files exist, copies them to the new location and deletes originals.
+void _migrateLegacyFiles() {
+  try {
+    final runtimeDir = getRuntimeDirectoryOrNull();
+    if (runtimeDir == null) return;
+
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    final legacyFiles = [
+      'completed_sessions.json',
+      'garden_state.json',
+      'main_app.lock',
+      'garden_overlay.lock',
+      'main_app_heartbeat.json',
+    ];
+
+    for (final fileName in legacyFiles) {
+      final legacy = File('$exeDir/$fileName');
+      if (legacy.existsSync()) {
+        final dest = File('$runtimeDir\\$fileName');
+        // Only copy data files, not lock files
+        if (fileName.endsWith('.json') && !dest.existsSync()) {
+          try {
+            legacy.copySync(dest.path);
+          } catch (_) {}
+        }
+        // Delete the legacy file regardless
+        try {
+          legacy.deleteSync();
+        } catch (_) {}
+      }
+    }
+  } catch (_) {
+    // Migration is best-effort — don't block app launch
+  }
 }
 
 class DeoreonemApp extends StatelessWidget {

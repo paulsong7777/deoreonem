@@ -262,9 +262,9 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                               padding: const EdgeInsets.only(top: 12, bottom: 4),
                               child: Text(drawer,
                                   style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.secondaryText)),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppTheme.secondaryText.withOpacity(0.6))),
                             ),
                           ...catItems.map((cat) {
                             final isDropCategory = cat['key'] == 'DROP';

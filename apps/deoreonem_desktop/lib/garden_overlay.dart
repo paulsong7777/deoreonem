@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'providers/local_storage_provider.dart';
 import 'services/local_storage_service.dart';
+import 'services/runtime_paths.dart';
 import 'widgets/quiet_garden_patch.dart';
 import 'theme.dart';
 import 'main.dart' show isMainAppRunning;
@@ -91,8 +92,13 @@ Future<void> _releaseOverlayLock(SharedPreferences prefs) async {
 
 // --- Exclusive file lock for true single instance ---
 
-/// Returns the lock file path next to the executable.
+/// Returns the lock file path in the runtime directory.
 File _getOverlayLockFile() {
+  final dir = getRuntimeDirectoryOrNull();
+  if (dir != null) {
+    return File('$dir\\garden_overlay.lock');
+  }
+  // Fallback for edge cases (should not happen in production)
   final exeDir = File(Platform.resolvedExecutable).parent.path;
   return File('$exeDir/garden_overlay.lock');
 }

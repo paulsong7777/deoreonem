@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'runtime_paths.dart';
 
 class LocalStorageService {
   static const _keyRecentSessions = 'recent_completed_session_ids';
@@ -103,16 +104,9 @@ class LocalStorageService {
   // across all launch scenarios (different exe paths, build vs ZIP, etc.)
 
   static File? _getSessionIdsFile() {
-    try {
-      final exePath = Platform.resolvedExecutable;
-      if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
-        return null;
-      }
-      final exeDir = File(exePath).parent.path;
-      return File('$exeDir/completed_sessions.json');
-    } catch (_) {
-      return null;
-    }
+    final dir = getRuntimeDirectoryOrNull();
+    if (dir == null) return null;
+    return File('$dir\\completed_sessions.json');
   }
 
   void _writeSessionIdsFile(List<String> sessionIds) {
@@ -212,20 +206,11 @@ class LocalStorageService {
     }
   }
 
-  /// Returns the path to garden_state.json next to the executable, or null in test.
+  /// Returns the path to garden_state.json in the runtime directory, or null in test.
   static File? _getGardenStateFile() {
-    try {
-      final exePath = Platform.resolvedExecutable;
-      // In test environments, resolvedExecutable may point to dart test runner —
-      // skip file sync in that case.
-      if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
-        return null;
-      }
-      final exeDir = File(exePath).parent.path;
-      return File('$exeDir/garden_state.json');
-    } catch (_) {
-      return null;
-    }
+    final dir = getRuntimeDirectoryOrNull();
+    if (dir == null) return null;
+    return File('$dir\\garden_state.json');
   }
 
   /// Read total nutrients from the garden state file (cross-process sync).

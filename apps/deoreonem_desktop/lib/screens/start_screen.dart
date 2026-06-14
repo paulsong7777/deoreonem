@@ -10,11 +10,18 @@ import '../providers/first_action_provider.dart';
 import '../garden_overlay.dart';
 import '../theme.dart';
 
-class StartScreen extends ConsumerWidget {
+class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StartScreen> createState() => _StartScreenState();
+}
+
+class _StartScreenState extends ConsumerState<StartScreen> {
+  bool _isLaunchingGarden = false;
+
+  @override
+  Widget build(BuildContext context) {
     final sessionState = ref.watch(sessionProvider);
     final isLoading = sessionState is AsyncLoading;
 
@@ -71,7 +78,8 @@ class StartScreen extends ConsumerWidget {
                         // Reset state for a fresh session
                         ref.read(itemsProvider.notifier).reset();
                         ref.read(summaryProvider.notifier).reset();
-                        ref.read(firstActionSelectedIdProvider.notifier).state = null;
+                        ref.read(firstActionSelectedIdProvider.notifier).state =
+                            null;
                         ref.read(sessionProvider.notifier).createSession();
                       },
                 child: isLoading
@@ -100,27 +108,10 @@ class StartScreen extends ConsumerWidget {
               ],
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () async {
-                  final prefs = ref.read(sharedPreferencesProvider);
-                  final alreadyRunning = await isGardenOverlayRunning(prefs);
-                  if (alreadyRunning) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('작은 자리가 이미 열려 있어요.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                    return;
-                  }
-                  final exePath = Platform.resolvedExecutable;
-                  await Process.start(exePath, ['--garden'],
-                      mode: ProcessStartMode.detached);
-                },
+                onPressed: _isLaunchingGarden ? null : _launchGarden,
                 child: const Text('작은 자리 보기',
-                    style:
-                        TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                    style: TextStyle(
+                        fontSize: 12, color: AppTheme.secondaryText)),
               ),
               const Spacer(),
               Text(
@@ -136,5 +127,33 @@ class StartScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
+  Future<void> _launchGarden() async {
+    if (_isLaunchingGarden) return;
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final alreadyRunning = await isGardenOverlayRunning(prefs);
+    if (alreadyRunning) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('작은 자리가 이미 열려 있어요.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isLaunchingGarden = true);
+
+    final exePath = Platform.resolvedExecutable;
+    await Process.start(exePath, ['--garden'],
+        mode: ProcessStartMode.detached);
+
+    // 3-second cooldown to prevent rapid clicks
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _isLaunchingGarden = false);
+    });
+  }
+}
