@@ -159,6 +159,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       final api = ref.read(apiServiceProvider);
       await api.updateCategory(item.sessionId, item.itemId, 'DROP');
       if (mounted) {
+        // Record nutrient (deduplicated — won't double-count)
+        await ref.read(localStorageProvider).addWorryNutrient(item.itemId);
+
         setState(() {
           _items.removeWhere((i) => i.itemId == item.itemId);
           _removingIds.remove(item.itemId);

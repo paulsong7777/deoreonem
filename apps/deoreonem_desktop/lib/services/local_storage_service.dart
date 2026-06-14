@@ -71,4 +71,34 @@ class LocalStorageService {
       jsonEncode(resets.map((k, v) => MapEntry(k, v.toIso8601String()))),
     );
   }
+
+  // --- Minimal Nutrient Persistence ---
+  // Bridge for future "small pot / quiet tree" widget.
+  // Full event/snapshot modeling deferred until widget requirements are clearer.
+  // Nutrient is symbolic emotional conversion, not game reward.
+  // Created only by worry let-go ("이 걱정 내려놓기").
+
+  static const _keyTotalWorryNutrients = 'total_worry_nutrients';
+  static const _keyNutrientCreatedItemIds = 'nutrient_created_item_ids';
+
+  int get totalWorryNutrients => _prefs.getInt(_keyTotalWorryNutrients) ?? 0;
+
+  bool hasNutrientForItem(String itemId) {
+    final ids = _prefs.getStringList(_keyNutrientCreatedItemIds) ?? [];
+    return ids.contains(itemId);
+  }
+
+  /// Records one nutrient for a worry item let-go. Returns true if nutrient was
+  /// created, false if already exists (duplicate prevention).
+  Future<bool> addWorryNutrient(String itemId) async {
+    if (hasNutrientForItem(itemId)) return false;
+
+    final ids = List<String>.from(_prefs.getStringList(_keyNutrientCreatedItemIds) ?? []);
+    ids.add(itemId);
+    await _prefs.setStringList(_keyNutrientCreatedItemIds, ids);
+
+    final current = totalWorryNutrients;
+    await _prefs.setInt(_keyTotalWorryNutrients, current + 1);
+    return true;
+  }
 }
