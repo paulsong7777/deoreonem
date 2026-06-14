@@ -4,6 +4,9 @@ import 'package:deoreonem_desktop/main.dart';
 
 void main() {
   group('isMainAppRunning', () {
+    // In test environment, file-based lock probe returns false (no lock file),
+    // so these tests exercise the SharedPreferences fallback path.
+
     test('returns false when no flag is set', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -12,7 +15,7 @@ void main() {
       expect(running, isFalse);
     });
 
-    test('returns true when flag is set with fresh heartbeat', () async {
+    test('returns true when flag is set with fresh heartbeat (prefs fallback)', () async {
       SharedPreferences.setMockInitialValues({
         'main_app_running': true,
         'main_app_heartbeat': DateTime.now().toIso8601String(),
@@ -20,8 +23,6 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
 
       final running = await isMainAppRunning(prefs);
-      // In test environment, file-based check returns null (no exe),
-      // falls back to SharedPreferences which has the values.
       expect(running, isTrue);
     });
 

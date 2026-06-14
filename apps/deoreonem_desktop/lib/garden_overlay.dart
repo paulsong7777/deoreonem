@@ -261,10 +261,10 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     _currentNutrients = widget.totalNutrients;
     windowManager.addListener(this);
 
-    // Periodically refresh nutrient state.
+    // Poll nutrient state every 1 second for responsive feedback.
     // Uses file-based sync first (reliable on Windows), falls back to SharedPreferences.
-    // Also update heartbeat for instance lock.
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    // Also update heartbeat for instance lock every cycle.
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       int fresh;
       // Try file-based sync first (written by main app after worry let-go)
       final fromFile = LocalStorageService.readGardenStateFromFile();
@@ -276,11 +276,32 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
         fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
       }
       if (fresh != _currentNutrients && mounted) {
+        final increased = fresh > _currentNutrients;
         setState(() => _currentNutrients = fresh);
+        // Show transient calm feedback when nutrient increases
+        if (increased) {
+          _showNutrientFeedback();
+        }
       }
-      // Update heartbeat
+      // Update heartbeat every cycle (1s is fine for a lightweight write)
       await widget.prefs.setString(_keyOverlayHeartbeat, DateTime.now().toIso8601String());
     });
+  }
+
+  /// Shows a brief calm message when a new nutrient is absorbed.
+  void _showNutrientFeedback() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          '작은 양분이 조용히 스며들고 있어요.',
+          style: TextStyle(fontSize: 12),
+        ),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override

@@ -47,10 +47,72 @@ void _clearMainAppHeartbeat() {
   } catch (_) {}
 }
 
-/// Checks if the main app is already running (file-based heartbeat guard).
-/// Falls back to SharedPreferences if file approach fails.
+// --- Exclusive file lock for main app single-instance detection ---
+
+/// Returns the main app lock file path next to the executable.
+File? _getMainAppLockFile() {
+  try {
+    final exePath = Platform.resolvedExecutable;
+    if (exePath.contains('dart_test') || exePath.contains('flutter_tester')) {
+      return null;
+    }
+    final exeDir = File(exePath).parent.path;
+    return File('$exeDir/main_app.lock');
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Global handle — kept open for process lifetime so lock is held.
+RandomAccessFile? _mainAppLockHandle;
+
+/// Acquires main app exclusive lock. Returns true if acquired.
+bool _acquireMainAppLock() {
+  try {
+    final lockFile = _getMainAppLockFile();
+    if (lockFile == null) return true; // test environment — allow
+    if (!lockFile.existsSync()) {
+      lockFile.writeAsStringSync('');
+    }
+    final handle = lockFile.openSync(mode: FileMode.write);
+    try {
+      handle.lockSync(FileLock.exclusive);
+      handle.writeStringSync('${pid}\n${DateTime.now().toIso8601String()}');
+      handle.flushSync();
+      _mainAppLockHandle = handle;
+      return true;
+    } catch (_) {
+      handle.closeSync();
+      return false;
+    }
+  } catch (_) {
+    return true; // file system error — allow launch
+  }
+}
+
+/// Checks if the main app is already running by probing its exclusive lock file.
+/// This is the primary detection mechanism. Falls back to heartbeat file.
 Future<bool> isMainAppRunning(SharedPreferences prefs) async {
-  // Try file-based check first (reliable cross-process on Windows)
+  // Primary: try to acquire the main app lock file
+  try {
+    final lockFile = _getMainAppLockFile();
+    if (lockFile != null && lockFile.existsSync()) {
+      final handle = lockFile.openSync(mode: FileMode.write);
+      try {
+        handle.lockSync(FileLock.exclusive);
+        // Lock acquired — main app is NOT running. Release immediately.
+        handle.unlockSync();
+        handle.closeSync();
+        return false;
+      } catch (_) {
+        // Lock failed — main app IS running
+        handle.closeSync();
+        return true;
+      }
+    }
+  } catch (_) {}
+
+  // Fallback: heartbeat file check
   try {
     final file = _getMainAppHeartbeatFile();
     if (file != null && file.existsSync()) {
@@ -64,7 +126,6 @@ Future<bool> isMainAppRunning(SharedPreferences prefs) async {
       if (lastBeat == null) return false;
       final age = DateTime.now().difference(lastBeat).inSeconds;
       if (age > _mainAppStaleThresholdSeconds) {
-        // Stale — clean up
         file.deleteSync();
         return false;
       }
@@ -72,7 +133,7 @@ Future<bool> isMainAppRunning(SharedPreferences prefs) async {
     }
   } catch (_) {}
 
-  // Fallback: SharedPreferences (may not work reliably across processes)
+  // Last fallback: SharedPreferences
   try {
     await prefs.reload();
   } catch (_) {}
@@ -104,7 +165,10 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
 
-  // Acquire main app lock (both file-based and SharedPreferences)
+  // Acquire main app exclusive lock (OS-level, released on process exit/crash)
+  _acquireMainAppLock();
+
+  // Acquire main app heartbeat (both file-based and SharedPreferences)
   await prefs.setBool(_keyMainAppRunning, true);
   await prefs.setString(_keyMainAppHeartbeat, DateTime.now().toIso8601String());
   _writeMainAppHeartbeat();
