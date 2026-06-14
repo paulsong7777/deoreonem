@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,15 @@ const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
 const _windowWidth = 220.0;
 const _windowHeight = 160.0;
+
+/// Validates that a window position is within reasonable bounds.
+/// Rejects negative or extremely large values that could place
+/// the window off-screen.
+bool isValidOverlayPosition(double x, double y) {
+  if (x < 0 || y < 0) return false;
+  if (x > 4000 || y > 3000) return false; // Reasonable upper bound for multi-display
+  return true;
+}
 
 Future<void> runGardenOverlay() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,11 +48,10 @@ Future<void> runGardenOverlay() async {
     final savedX = prefs.getDouble(_keyOverlayX);
     final savedY = prefs.getDouble(_keyOverlayY);
 
-    if (savedX != null && savedY != null && savedX >= 0 && savedY >= 0) {
+    if (savedX != null && savedY != null && isValidOverlayPosition(savedX, savedY)) {
       await windowManager.setPosition(Offset(savedX, savedY));
     } else {
       // Default: bottom-right above taskbar
-      // Use a reasonable screen-based default
       await windowManager.setAlignment(Alignment.bottomRight);
     }
 
@@ -87,6 +96,8 @@ class _GardenOverlayHome extends StatefulWidget {
 
 class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     with WindowListener {
+  Timer? _saveTimer;
+
   @override
   void initState() {
     super.initState();
@@ -95,16 +106,19 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     windowManager.removeListener(this);
     super.dispose();
   }
 
   @override
-  void onWindowMoved() async {
-    // Save position after drag
-    final pos = await windowManager.getPosition();
-    await widget.prefs.setDouble(_keyOverlayX, pos.dx);
-    await widget.prefs.setDouble(_keyOverlayY, pos.dy);
+  void onWindowMoved() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 300), () async {
+      final pos = await windowManager.getPosition();
+      await widget.prefs.setDouble(_keyOverlayX, pos.dx);
+      await widget.prefs.setDouble(_keyOverlayY, pos.dy);
+    });
   }
 
   void _closeOverlay() {
@@ -114,6 +128,25 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   void _openMainApp() async {
     final exePath = Platform.resolvedExecutable;
     await Process.start(exePath, [], mode: ProcessStartMode.detached);
+  }
+
+  Future<void> _resetPosition() async {
+    await widget.prefs.remove(_keyOverlayX);
+    await widget.prefs.remove(_keyOverlayY);
+    await windowManager.setAlignment(Alignment.bottomRight);
+  }
+
+  void _handleMenuSelection(String value) {
+    switch (value) {
+      case 'open':
+        _openMainApp();
+      case 'hide':
+        _closeOverlay();
+      case 'reset_position':
+        _resetPosition();
+      case 'quit':
+        _closeOverlay();
+    }
   }
 
   @override
@@ -152,7 +185,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.close, size: 12,
@@ -169,24 +202,20 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     child: PopupMenuButton<String>(
                       tooltip: '메뉴',
                       icon: Icon(Icons.more_horiz, size: 14,
-                          color: AppTheme.secondaryText.withOpacity(0.6)),
+                          color: AppTheme.secondaryText.withValues(alpha: 0.6)),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(maxWidth: 160),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'open':
-                            _openMainApp();
-                          case 'hide':
-                            _closeOverlay();
-                          case 'quit':
-                            _closeOverlay();
-                        }
-                      },
+                      onSelected: _handleMenuSelection,
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'open',
                           height: 36,
                           child: Text('덜어냄 열기', style: TextStyle(fontSize: 13)),
+                        ),
+                        const PopupMenuItem(
+                          value: 'reset_position',
+                          height: 36,
+                          child: Text('위치 초기화', style: TextStyle(fontSize: 13)),
                         ),
                         const PopupMenuItem(
                           value: 'hide',
@@ -213,7 +242,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                         '드래그로 이동',
                         style: TextStyle(
                           fontSize: 9,
-                          color: AppTheme.secondaryText.withOpacity(0.4),
+                          color: AppTheme.secondaryText.withValues(alpha: 0.4),
                           decoration: TextDecoration.none,
                           fontWeight: FontWeight.w400,
                         ),

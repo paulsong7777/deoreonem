@@ -4,14 +4,38 @@ import '../theme.dart';
 
 /// A small calm garden visual that represents the plant stage.
 /// Uses simple CustomPaint for a ground patch with a sprout/tree.
-class QuietGardenPatch extends StatelessWidget {
+/// Includes a very subtle idle sway animation (seed stage is static).
+class QuietGardenPatch extends StatefulWidget {
   final int totalNutrients;
 
   const QuietGardenPatch({super.key, required this.totalNutrients});
 
   @override
+  State<QuietGardenPatch> createState() => _QuietGardenPatchState();
+}
+
+class _QuietGardenPatchState extends State<QuietGardenPatch>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final stage = getPlantStage(totalNutrients);
+    final stage = getPlantStage(widget.totalNutrients);
 
     return Container(
       width: double.infinity,
@@ -23,17 +47,29 @@ class QuietGardenPatch extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Simple visual based on stage
           SizedBox(
             width: 80,
             height: 80,
-            child: CustomPaint(
-              painter: _GardenPainter(stage: stage),
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                // Subtle lean: max ±~2.8 degrees (0.05 radians)
+                final angle = stage == PlantStage.seed
+                    ? 0.0
+                    : (_controller.value - 0.5) * 0.05;
+                return Transform.rotate(
+                  angle: angle,
+                  alignment: Alignment.bottomCenter,
+                  child: CustomPaint(
+                    painter: _GardenPainter(stage: stage),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            _getGardenMessage(totalNutrients),
+            getPotSignalMessage(widget.totalNutrients),
             style: const TextStyle(
               fontSize: 10,
               color: AppTheme.secondaryText,
@@ -46,10 +82,6 @@ class QuietGardenPatch extends StatelessWidget {
       ),
     );
   }
-
-  String _getGardenMessage(int nutrients) {
-    return getPotSignalMessage(nutrients);
-  }
 }
 
 class _GardenPainter extends CustomPainter {
@@ -61,12 +93,15 @@ class _GardenPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height);
 
-    // Ground mound
+    // Ground mound — wider for quietTree
+    final groundWidth = stage == PlantStage.quietTree ? 70.0 : 60.0;
     final groundPaint = Paint()
       ..color = const Color(0xFF8B7355).withValues(alpha: 0.3);
     canvas.drawOval(
       Rect.fromCenter(
-          center: Offset(center.dx, size.height - 5), width: 60, height: 14),
+          center: Offset(center.dx, size.height - 5),
+          width: groundWidth,
+          height: 14),
       groundPaint,
     );
 
@@ -101,9 +136,21 @@ class _GardenPainter extends CustomPainter {
       ..color = const Color(0xFF7B9E87).withValues(alpha: 0.7);
 
     if (stage == PlantStage.sprout) {
-      // Two tiny leaves
-      canvas.drawCircle(Offset(stemTop.dx - 4, stemTop.dy + 2), 4, leafPaint);
-      canvas.drawCircle(Offset(stemTop.dx + 4, stemTop.dy + 2), 4, leafPaint);
+      // Two tiny elliptical leaves
+      canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(stemTop.dx - 4, stemTop.dy + 2),
+            width: 9,
+            height: 7),
+        leafPaint,
+      );
+      canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(stemTop.dx + 4, stemTop.dy + 2),
+            width: 9,
+            height: 7),
+        leafPaint,
+      );
     } else if (stage == PlantStage.smallLeaf) {
       canvas.drawCircle(Offset(stemTop.dx - 6, stemTop.dy + 3), 6, leafPaint);
       canvas.drawCircle(Offset(stemTop.dx + 6, stemTop.dy + 3), 6, leafPaint);
@@ -115,10 +162,19 @@ class _GardenPainter extends CustomPainter {
         leafPaint,
       );
     } else if (stage == PlantStage.quietTree) {
+      // Main canopy
       canvas.drawOval(
         Rect.fromCenter(
             center: Offset(stemTop.dx, stemTop.dy + 4), width: 36, height: 28),
         leafPaint,
+      );
+      // Secondary smaller canopy for fullness
+      final upperLeafPaint = Paint()
+        ..color = const Color(0xFF7B9E87).withValues(alpha: 0.5);
+      canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(stemTop.dx, stemTop.dy - 4), width: 22, height: 16),
+        upperLeafPaint,
       );
     }
   }
