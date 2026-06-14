@@ -7,6 +7,7 @@ import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
 import '../providers/local_storage_provider.dart';
 import '../providers/first_action_provider.dart';
+import '../garden_overlay.dart';
 import '../theme.dart';
 
 class StartScreen extends ConsumerWidget {
@@ -100,6 +101,19 @@ class StartScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () async {
+                  final prefs = ref.read(sharedPreferencesProvider);
+                  final alreadyRunning = await isGardenOverlayRunning(prefs);
+                  if (alreadyRunning) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('작은 자리가 이미 열려 있어요.'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    return;
+                  }
                   final exePath = Platform.resolvedExecutable;
                   await Process.start(exePath, ['--garden'],
                       mode: ProcessStartMode.detached);

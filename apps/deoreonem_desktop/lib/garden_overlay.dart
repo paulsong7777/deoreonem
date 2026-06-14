@@ -12,16 +12,50 @@ import 'theme.dart';
 
 const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
+const _keyOverlayRunning = 'garden_overlay_running';
+const _keyOverlayHeartbeat = 'garden_overlay_heartbeat';
 const _windowWidth = 220.0;
 const _windowHeight = 160.0;
+const _staleThresholdSeconds = 15;
 
 /// Validates that a window position is within reasonable bounds.
-/// Rejects negative or extremely large values that could place
-/// the window off-screen.
 bool isValidOverlayPosition(double x, double y) {
   if (x < 0 || y < 0) return false;
-  if (x > 4000 || y > 3000) return false; // Reasonable upper bound for multi-display
+  if (x > 4000 || y > 3000) return false;
   return true;
+}
+
+/// Checks if a garden overlay instance is currently running.
+/// Returns false if lock is stale (heartbeat older than threshold).
+Future<bool> isGardenOverlayRunning(SharedPreferences prefs) async {
+  await prefs.reload();
+  final running = prefs.getBool(_keyOverlayRunning) ?? false;
+  if (!running) return false;
+
+  final heartbeat = prefs.getString(_keyOverlayHeartbeat);
+  if (heartbeat == null) return false;
+
+  final lastBeat = DateTime.tryParse(heartbeat);
+  if (lastBeat == null) return false;
+
+  final age = DateTime.now().difference(lastBeat).inSeconds;
+  if (age > _staleThresholdSeconds) {
+    // Stale lock — clear it
+    await prefs.setBool(_keyOverlayRunning, false);
+    return false;
+  }
+
+  return true;
+}
+
+Future<void> _acquireOverlayLock(SharedPreferences prefs) async {
+  await prefs.setBool(_keyOverlayRunning, true);
+  await prefs.setString(_keyOverlayHeartbeat, DateTime.now().toIso8601String());
+}
+
+Future<void> _releaseOverlayLock(SharedPreferences prefs) async {
+  await prefs.setBool(_keyOverlayRunning, false);
+  await prefs.remove(_keyOverlayHeartbeat);
 }
 
 Future<void> runGardenOverlay() async {
@@ -29,6 +63,9 @@ Future<void> runGardenOverlay() async {
   await windowManager.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
+
+  // Acquire instance lock
+  await _acquireOverlayLock(prefs);
 
   const windowSize = Size(_windowWidth, _windowHeight);
 
@@ -108,12 +145,15 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
 
     // Periodically refresh nutrient state from SharedPreferences
     // to reflect changes made by the main app process.
+    // Also update heartbeat for instance lock.
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
       await widget.prefs.reload();
       final fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
       if (fresh != _currentNutrients && mounted) {
         setState(() => _currentNutrients = fresh);
       }
+      // Update heartbeat
+      await widget.prefs.setString(_keyOverlayHeartbeat, DateTime.now().toIso8601String());
     });
   }
 
@@ -135,7 +175,8 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     });
   }
 
-  void _closeOverlay() {
+  void _closeOverlay() async {
+    await _releaseOverlayLock(widget.prefs);
     exit(0);
   }
 
