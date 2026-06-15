@@ -59,14 +59,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final storage = ref.read(localStorageProvider);
     final sessionIds = storage.getRecentCompletedSessionIds();
 
-    logDiagnostic('REVIEW_LOAD_START sessionIds=$sessionIds');
+    logDiagnostic('REVIEW_LOAD_START ids=$sessionIds source=file-primary');
 
     if (sessionIds.isEmpty) {
-      logDiagnostic('REVIEW_LOAD no session IDs found');
-      setState(() {
-        _state = _ReviewState.error;
-        _errorMessage = '저장된 세션이 없습니다.';
-      });
+      logDiagnostic('REVIEW_LOAD no session IDs — showing empty');
+      setState(() => _state = _ReviewState.empty);
       return;
     }
 

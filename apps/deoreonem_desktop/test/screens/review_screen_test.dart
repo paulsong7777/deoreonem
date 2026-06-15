@@ -478,14 +478,15 @@ void main() {
       expect(find.text('새로 비우기'), findsOneWidget);
     });
 
-    testWidgets('ReviewScreen shows error when no saved session', (tester) async {
+    testWidgets('ReviewScreen shows empty state when no saved session', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       await tester.pumpWidget(buildTestWidget(prefs));
       await tester.pumpAndSettle();
 
-      expect(find.text('저장된 세션이 없습니다.'), findsOneWidget);
+      // No sessions → empty state (not error)
+      expect(find.text('지금 다시 꺼내볼 것은 없습니다.'), findsOneWidget);
       expect(find.text('새로 비우기'), findsOneWidget);
     });
 

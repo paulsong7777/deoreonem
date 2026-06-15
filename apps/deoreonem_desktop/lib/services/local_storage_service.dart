@@ -32,28 +32,33 @@ class LocalStorageService {
   }
 
   List<String> getRecentCompletedSessionIds() {
-    return _getMergedSessionIds();
+    // FILE is the authoritative source of truth.
+    // SharedPreferences is stale (loaded once at app start) and only used as backup.
+    final fromFile = _readSessionIdsFromFile();
+    if (fromFile.isNotEmpty) return fromFile;
+    // Fallback only if file doesn't exist or is empty (first launch / test env)
+    return List<String>.from(
+        _prefs.getStringList(_keyRecentSessions) ?? []);
   }
 
-  /// Reads from both SharedPreferences AND file, merges/deduplicates.
-  /// Maintains newest-first order from SharedPreferences as primary,
-  /// then appends any IDs only found in the file fallback.
+  /// Merges file (primary) and SharedPreferences (backup), deduplicates.
+  /// Used only during saveLastCompletedSession to ensure no IDs are lost.
   List<String> _getMergedSessionIds() {
+    final fromFile = _readSessionIdsFromFile();
     final fromPrefs = List<String>.from(
         _prefs.getStringList(_keyRecentSessions) ?? []);
-    final fromFile = _readSessionIdsFromFile();
 
-    if (fromPrefs.isEmpty && fromFile.isEmpty) return [];
-    if (fromFile.isEmpty) return List<String>.from(fromPrefs);
+    if (fromFile.isEmpty && fromPrefs.isEmpty) return [];
     if (fromPrefs.isEmpty) return List<String>.from(fromFile);
+    if (fromFile.isEmpty) return List<String>.from(fromPrefs);
 
-    // Merge: prefs is primary order, append file-only entries
+    // Merge: FILE is primary order, append prefs-only entries as backup
     final seen = <String>{};
     final merged = <String>[];
-    for (final id in fromPrefs) {
+    for (final id in fromFile) {
       if (seen.add(id)) merged.add(id);
     }
-    for (final id in fromFile) {
+    for (final id in fromPrefs) {
       if (seen.add(id)) merged.add(id);
     }
     // Trim to max
