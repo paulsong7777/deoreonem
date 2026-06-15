@@ -44,15 +44,15 @@ void main() {
     });
 
     test('pot signal message for sprout', () {
-      expect(getPotSignalMessage(1), '내려놓은 걱정이 작은 자리에 스며들고 있어요.');
+      expect(getPotSignalMessage(1), '내려놓은 걱정이 조용한 나무의 양분이 되고 있어요.');
     });
 
     test('pot signal message for smallLeaf', () {
-      expect(getPotSignalMessage(5), '작은 싹이 조용히 자라고 있어요.');
+      expect(getPotSignalMessage(5), '조용한 나무가 조금씩 자라고 있어요.');
     });
 
     test('pot signal message for youngPlant', () {
-      expect(getPotSignalMessage(10), '조용한 잎이 조금씩 자라고 있어요.');
+      expect(getPotSignalMessage(10), '조용한 나무가 천천히 자라고 있어요.');
     });
 
     test('pot signal message for quietTree', () {

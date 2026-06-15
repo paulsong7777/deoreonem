@@ -110,7 +110,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _isLaunchingGarden ? null : _launchGarden,
-                child: const Text('작은 자리 보기',
+                child: const Text('조용한 나무 보기',
                     style: TextStyle(
                         fontSize: 12, color: AppTheme.secondaryText)),
               ),
@@ -138,7 +138,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('작은 자리가 이미 열려 있어요.'),
+            content: Text('조용한 나무가 이미 열려 있어요.'),
             duration: Duration(seconds: 2),
           ),
         );

@@ -434,7 +434,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                         const PopupMenuItem(
                           value: 'close',
                           height: 36,
-                          child: Text('작은 자리 닫기', style: TextStyle(fontSize: 13)),
+                          child: Text('조용한 나무 닫기', style: TextStyle(fontSize: 13)),
                         ),
                       ],
                     ),

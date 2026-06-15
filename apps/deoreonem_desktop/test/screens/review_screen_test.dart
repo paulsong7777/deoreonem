@@ -368,7 +368,7 @@ void main() {
       // API called correctly
       verify(() => mockApi.updateCategory('session-1', 'worry-1', 'DROP')).called(1);
       // Nutrient SnackBar shown
-      expect(find.text('걱정 하나가 작은 양분이 되었습니다.'), findsOneWidget);
+      expect(find.text('걱정 하나가 조용한 나무의 양분이 되었어요.'), findsOneWidget);
     });
 
     testWidgets('"다시 3일 맡겨두기" keeps item visible (no removal)', (tester) async {

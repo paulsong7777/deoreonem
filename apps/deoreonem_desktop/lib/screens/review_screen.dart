@@ -11,7 +11,6 @@ import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
 import '../services/diagnostics_log.dart';
-import '../services/plant_stage_helper.dart';
 
 enum _ReviewState { loading, error, items, entrusted, empty }
 
@@ -194,7 +193,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           if (visible.isEmpty) _state = _ReviewState.empty;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('걱정 하나가 작은 양분이 되었습니다.'), duration: Duration(seconds: 3)),
+          const SnackBar(content: Text('걱정 하나가 조용한 나무의 양분이 되었어요.'), duration: Duration(seconds: 3)),
         );
       }
     } catch (e) {
@@ -313,28 +312,28 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               if (_hasConvertedWorryToNutrient) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '사라진 것이 아니라, 오늘의 쉼을 위한 작은 양분이 되었습니다.',
+                  '내려놓은 걱정은 조용한 나무의 양분이 되었어요.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
                   textAlign: TextAlign.center,
                 ),
               ] else ...[
                 const SizedBox(height: 8),
                 Text(
-                  '방금 닫아둔 생각들은 여기서 조용히 정리되었습니다.',
+                  '맡겨둔 것들은 모두 조용히 정리되었어요.',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
               ],
               const SizedBox(height: 8),
               Text(
-                '필요하면 새로 비워내고, 아니면 이대로 마쳐도 괜찮습니다.',
+                '필요하면 새로 비워내고, 아니면 이대로 닫아도 괜찮습니다.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               // Quiet pot signal
               Text(
-                getPotSignalMessage(ref.read(localStorageProvider).totalWorryNutrients),
+                '조용한 나무가 오늘도 자라고 있어요.',
                 style: TextStyle(fontSize: 11, color: AppTheme.secondaryText.withOpacity(0.7)),
                 textAlign: TextAlign.center,
               ),
