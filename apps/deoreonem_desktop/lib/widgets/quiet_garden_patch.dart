@@ -70,15 +70,15 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFFAF8F4), // very light warm
-            Color(0xFFF5F0E8), // subtle warm ground transition
+            Color(0xFFFDFBF8), // much lighter, almost see-through
+            Color(0xFFF8F4ED), // barely-there warm ground
           ],
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
@@ -90,8 +90,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
             children: [
               const Spacer(flex: 1),
               SizedBox(
-                width: 120,
-                height: 100,
+                width: 140,
+                height: 110,
                 child: AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -102,14 +102,14 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                       angle: angle,
                       alignment: Alignment.bottomCenter,
                       child: CustomPaint(
-                        size: const Size(120, 100),
+                        size: const Size(140, 110),
                         painter: _GardenPainter(stage: stage),
                       ),
                     );
                   },
                 ),
               ),
-              const Spacer(flex: 1),
+              const SizedBox(height: 6),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
@@ -126,7 +126,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
             ],
           ),
           // Subtle warm glow around ground area when nutrients increase

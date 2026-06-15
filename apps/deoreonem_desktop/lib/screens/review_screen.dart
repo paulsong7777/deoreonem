@@ -409,7 +409,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   Widget _buildItemCard(BuildContext context, ItemModel item, {required bool isWorry, required bool isMemo, required bool isSchedule}) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       elevation: 0.5,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

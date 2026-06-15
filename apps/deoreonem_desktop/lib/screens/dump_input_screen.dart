@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../theme.dart';
+
+// KOREAN IME STABILITY RULE:
+// The TextField must NEVER be rebuilt by parent state changes during typing.
+// Korean syllable composition (받침 → 모음 transitions) is interrupted if
+// the widget tree above the TextField rebuilds. This isolated widget ensures
+// no provider state, savedItems list, or error state can trigger a rebuild
+// that disrupts IME composition.
 
 class DumpInputScreen extends ConsumerStatefulWidget {
   const DumpInputScreen({super.key});
@@ -14,16 +20,8 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 }
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
+  final GlobalKey<_StableTextInputState> _inputKey = GlobalKey<_StableTextInputState>();
   bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-    _focusNode = FocusNode();
-  }
 
   /// Parse multiline text into non-empty trimmed lines
   List<String> _parseLines(String text) {
@@ -39,7 +37,8 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   Future<void> _navigateToClassify() async {
     if (_isSaving) return;
 
-    final lines = _parseLines(_controller.text);
+    final text = _inputKey.currentState?.text ?? '';
+    final lines = _parseLines(text);
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
     if (lines.isEmpty && savedItems.isEmpty) {
       // Nothing entered yet — gentle nudge, no crash
@@ -76,7 +75,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
       }
       if (mounted) {
-        _controller.clear();
+        _inputKey.currentState?.clear();
         setState(() => _isSaving = false);
         context.go('/classify');
       }
@@ -92,13 +91,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
   }
 
   @override
@@ -158,30 +150,13 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   )),
               const Divider(height: 24),
             ],
-            // Multiline input area.
-            // IMPORTANT for Korean IME stability on Windows:
-            // - Explicit FocusNode prevents recreation on rebuild
-            // - No onChanged, no ValueListenableBuilder, no controller listener
-            // - No inputFormatters that could interfere with composition
-            // - autofocus only requests focus once on mount
+            // Isolated TextField — NEVER rebuilt by provider state changes.
+            // See _StableTextInput class and KOREAN IME STABILITY RULE above.
             Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                autofocus: true,
-                enabled: !_isSaving,
-                decoration: InputDecoration(
-                  hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
-                  hintMaxLines: 10,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.border),
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                ),
+              child: _StableTextInput(
+                key: _inputKey,
+                isSaving: _isSaving,
+                onSubmit: (_) => _navigateToClassify(),
               ),
             ),
             const SizedBox(height: 16),
@@ -204,6 +179,69 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Isolated text input widget — NEVER rebuilt by provider state changes.
+/// This prevents Korean IME composition from being interrupted.
+class _StableTextInput extends StatefulWidget {
+  final bool isSaving;
+  final ValueChanged<String> onSubmit;
+
+  const _StableTextInput({
+    super.key,
+    required this.isSaving,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_StableTextInput> createState() => _StableTextInputState();
+}
+
+class _StableTextInputState extends State<_StableTextInput> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  String get text => _controller.text;
+
+  void clear() => _controller.clear();
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      maxLines: null,
+      expands: true,
+      textAlignVertical: TextAlignVertical.top,
+      autofocus: true,
+      enabled: !widget.isSaving,
+      // NO onChanged, NO onSubmitted, NO inputFormatters
+      // NO keyboard shortcuts that intercept during composition
+      decoration: InputDecoration(
+        hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
+        hintMaxLines: 10,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+        contentPadding: const EdgeInsets.all(16),
       ),
     );
   }

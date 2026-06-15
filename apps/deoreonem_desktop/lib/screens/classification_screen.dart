@@ -282,7 +282,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                       ? AppTheme.drop
                                       : AppTheme.primaryText,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
+                                      horizontal: 16, vertical: 14),
                                   alignment: Alignment.centerLeft,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
