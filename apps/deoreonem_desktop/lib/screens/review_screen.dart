@@ -10,6 +10,7 @@ import '../providers/local_storage_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/summary_provider.dart';
+import '../services/diagnostics_log.dart';
 import '../services/plant_stage_helper.dart';
 
 enum _ReviewState { loading, error, items, entrusted, empty }
@@ -57,7 +58,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   Future<void> _loadReview() async {
     final storage = ref.read(localStorageProvider);
     final sessionIds = storage.getRecentCompletedSessionIds();
+
+    logDiagnostic('REVIEW_LOAD_START sessionIds=$sessionIds');
+
     if (sessionIds.isEmpty) {
+      logDiagnostic('REVIEW_LOAD no session IDs found');
       setState(() {
         _state = _ReviewState.error;
         _errorMessage = '저장된 세션이 없습니다.';
@@ -68,50 +73,65 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final allItems = <ItemModel>[];
     final api = ref.read(apiServiceProvider);
     int failCount = 0;
+    int successCount = 0;
 
     for (final sessionId in sessionIds) {
       try {
         final items = await api.getReview(sessionId);
+        logDiagnostic('REVIEW_FETCH session=$sessionId items=${items.length}');
         allItems.addAll(items);
-      } catch (_) {
+        successCount++;
+      } catch (e) {
+        logDiagnostic('REVIEW_FETCH_FAILED session=$sessionId error=$e');
         failCount++;
       }
     }
 
     if (mounted) {
-      if (allItems.isEmpty) {
+      final visible = allItems
+          .where((i) => i.category != null && _visibleCategories.contains(i.category))
+          .toList();
+
+      logDiagnostic('REVIEW_LOAD_DONE total=${allItems.length} visible=${visible.length} success=$successCount fail=$failCount');
+
+      // If ALL sessions failed (network error), show error
+      if (successCount == 0 && failCount > 0) {
         setState(() {
           _state = _ReviewState.error;
-          _errorMessage = failCount > 0
-              ? '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.'
-              : '리뷰를 불러오는데 실패했어요.';
+          _errorMessage = '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.';
         });
-      } else {
-        final visible = allItems
-            .where((i) => i.category != null && _visibleCategories.contains(i.category))
-            .toList();
-        ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
-
-        // Set default drawer based on content
-        final hasWorry = visible.any((i) => i.category == 'WORRY_ONLY');
-        final hasSchedule = visible.any((i) => ['TOMORROW', 'THIS_WEEK', 'WAITING'].contains(i.category));
-        final hasMemo = visible.any((i) => i.category == 'MEMO');
-
-        String defaultDrawer = '감정';
-        if (hasWorry) {
-          defaultDrawer = '감정';
-        } else if (hasSchedule) {
-          defaultDrawer = '일정';
-        } else if (hasMemo) {
-          defaultDrawer = '메모';
-        }
-
-        setState(() {
-          _items = allItems;
-          _state = _ReviewState.items;
-          _selectedDrawer = defaultDrawer;
-        });
+        return;
       }
+
+      // If no visible items remain (all cleared/dropped), show empty state
+      if (visible.isEmpty) {
+        await storage.setReviewableEntrustedCount(0);
+        setState(() => _state = _ReviewState.empty);
+        return;
+      }
+
+      // Normal case: show items
+      await storage.setReviewableEntrustedCount(visible.length);
+
+      // Set default drawer based on content
+      final hasWorry = visible.any((i) => i.category == 'WORRY_ONLY');
+      final hasSchedule = visible.any((i) => ['TOMORROW', 'THIS_WEEK', 'WAITING'].contains(i.category));
+      final hasMemo = visible.any((i) => i.category == 'MEMO');
+
+      String defaultDrawer = '감정';
+      if (hasWorry) {
+        defaultDrawer = '감정';
+      } else if (hasSchedule) {
+        defaultDrawer = '일정';
+      } else if (hasMemo) {
+        defaultDrawer = '메모';
+      }
+
+      setState(() {
+        _items = allItems;
+        _state = _ReviewState.items;
+        _selectedDrawer = defaultDrawer;
+      });
     }
   }
 

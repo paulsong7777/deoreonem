@@ -461,7 +461,7 @@ void main() {
   });
 
   group('Empty and error states', () {
-    testWidgets('ReviewScreen shows empty state when no items', (tester) async {
+    testWidgets('ReviewScreen shows empty state when no reviewable items', (tester) async {
       SharedPreferences.setMockInitialValues({
         'recent_completed_session_ids': ['session-1'],
       });
@@ -473,7 +473,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(prefs));
       await tester.pumpAndSettle();
 
-      expect(find.text('리뷰를 불러오는데 실패했어요.'), findsOneWidget);
+      // Empty state — not error state
+      expect(find.text('지금 다시 꺼내볼 것은 없습니다.'), findsOneWidget);
       expect(find.text('새로 비우기'), findsOneWidget);
     });
 
@@ -486,6 +487,54 @@ void main() {
 
       expect(find.text('저장된 세션이 없습니다.'), findsOneWidget);
       expect(find.text('새로 비우기'), findsOneWidget);
+    });
+
+    testWidgets('ReviewScreen shows error only on true network failure', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'recent_completed_session_ids': ['session-1'],
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      when(() => mockApi.getReview('session-1'))
+          .thenThrow(Exception('Network error'));
+
+      await tester.pumpWidget(buildTestWidget(prefs));
+      await tester.pumpAndSettle();
+
+      // True network failure shows error
+      expect(find.textContaining('연결할 수 없어요'), findsOneWidget);
+    });
+
+    testWidgets('ReviewScreen shows valid items when one session empty and another has items', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'recent_completed_session_ids': ['session-empty', 'session-valid'],
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      when(() => mockApi.getReview('session-empty'))
+          .thenAnswer((_) async => <ItemModel>[]);
+      when(() => mockApi.getReview('session-valid'))
+          .thenAnswer((_) async => [
+            ItemModel(
+              itemId: 'item-1',
+              sessionId: 'session-valid',
+              content: '유효한 항목',
+              category: 'WORRY_ONLY',
+              isFirstAction: false,
+              sortOrder: 1,
+              createdAt: DateTime.utc(2026, 7, 1),
+              updatedAt: DateTime.utc(2026, 7, 1),
+            ),
+          ]);
+
+      await tester.pumpWidget(buildTestWidget(prefs));
+      await tester.pumpAndSettle();
+
+      // Valid items from second session should show
+      expect(find.text('유효한 항목'), findsOneWidget);
+      // Should NOT show error
+      expect(find.textContaining('실패'), findsNothing);
+      expect(find.textContaining('연결'), findsNothing);
     });
   });
 }
