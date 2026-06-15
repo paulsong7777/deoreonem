@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:deoreonem_desktop/screens/classification_screen.dart';
+import 'package:deoreonem_desktop/design/app_components.dart';
 import 'package:deoreonem_desktop/providers/session_provider.dart';
 import 'package:deoreonem_desktop/providers/items_provider.dart';
 import 'package:deoreonem_desktop/models/session_model.dart';
@@ -89,7 +90,7 @@ void main() {
     expect(find.text('바로 흘려보내기'), findsOneWidget);
     expect(find.text('서랍에 넣지 않고 지금은 흘려보냅니다.'), findsOneWidget);
     // Item card with content
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(ProductSurface), findsWidgets);
   });
 
   testWidgets('ClassificationScreen does not crash with empty items list',

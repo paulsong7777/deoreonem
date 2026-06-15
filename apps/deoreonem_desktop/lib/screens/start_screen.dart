@@ -9,6 +9,8 @@ import '../providers/local_storage_provider.dart';
 import '../providers/first_action_provider.dart';
 import '../garden_overlay.dart';
 import '../theme.dart';
+import '../design/app_tokens.dart';
+import '../design/app_components.dart';
 import '../build_info.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
@@ -55,31 +57,26 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       body: Center(
         child: SingleChildScrollView(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 520),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 80),
                   // A. Hero text
                   Text(
                     '덜어냄',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w200,
-                      color: AppTheme.primaryText,
-                      letterSpacing: 2,
-                    ),
+                    style: AppTokens.titleHero.copyWith(fontSize: 44),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     '오늘 머릿속에 남아있는 것들을\n잠시 내려놓아 보세요.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: AppTheme.secondaryText,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppTokens.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -89,7 +86,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppTheme.secondaryText.withOpacity(0.6),
+                      color: AppTokens.textMuted.withOpacity(0.8),
                     ),
                   ),
 
@@ -101,7 +98,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
-                    height: 54,
+                    height: 52,
                     child: ElevatedButton(
                       onPressed: isLoading
                           ? null
@@ -116,10 +113,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                                   .read(sessionProvider.notifier)
                                   .createSession();
                             },
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
                       child: isLoading
                           ? const SizedBox(
                               width: 20,
@@ -127,24 +120,18 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white),
                             )
-                          : const Text('시작하기',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w500)),
+                          : Text('시작하기', style: AppTokens.buttonPrimary),
                     ),
                   ),
                   if (hasReviewable) ...[
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: 46,
                       child: OutlinedButton(
                         onPressed: () => context.go('/review'),
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: const Text('맡겨둔 것 확인하기',
-                            style: TextStyle(fontSize: 13)),
+                        child: Text('맡겨둔 것 확인하기',
+                            style: AppTokens.buttonSecondary.copyWith(fontSize: 13)),
                       ),
                     ),
                   ],
@@ -155,7 +142,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       '조용한 나무 보기',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.secondaryText.withOpacity(0.7),
+                        color: AppTokens.textMuted.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -166,7 +153,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                     'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.secondaryText.withOpacity(0.35),
+                      color: AppTokens.textMuted.withOpacity(0.35),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -183,14 +170,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final storage = ref.watch(localStorageProvider);
     final nutrients = storage.totalWorryNutrients;
 
-    return Container(
+    return ProductSurface(
       width: double.infinity,
       height: 200,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFEFC),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFEDE7DD), width: 0.5),
-      ),
+      padding: EdgeInsets.zero,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -208,16 +191,13 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.primaryText,
+              color: AppTokens.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '내려놓은 걱정은 나무의 양분이 됩니다.',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.secondaryText.withOpacity(0.7),
-            ),
+            style: AppTokens.caption,
           ),
         ],
       ),
@@ -232,15 +212,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     if (alreadyRunning) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('조용한 나무가 이미 열려 있어요.'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF5B4A3F),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
+          CalmSnackBar.show('조용한 나무가 이미 열려 있어요.'),
         );
       }
       return;

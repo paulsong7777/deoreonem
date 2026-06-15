@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
+import '../design/app_tokens.dart';
+import '../design/app_components.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../models/item_model.dart';
@@ -128,12 +130,9 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
 
   void _showClassifyError([Object? error]) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error != null
-            ? '분류를 저장하지 못했어요: $error'
-            : '분류를 저장하지 못했어요. 다시 시도해 주세요.'),
-        duration: const Duration(seconds: 4),
-      ),
+      CalmSnackBar.show(error != null
+          ? '분류를 저장하지 못했어요: $error'
+          : '분류를 저장하지 못했어요. 다시 시도해 주세요.'),
     );
   }
 
@@ -175,16 +174,20 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     if (items.isEmpty) {
       return Scaffold(
         body: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTokens.pagePadding,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('분류할 항목이 없습니다.',
                   style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/dump'),
-                child: const Text('돌아가기'),
+              SizedBox(
+                width: 200,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/dump'),
+                  child: const Text('돌아가기'),
+                ),
               ),
             ],
           ),
@@ -194,11 +197,11 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
 
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppTokens.pagePadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('분류하기', style: Theme.of(context).textTheme.headlineMedium),
+            Text('분류하기', style: AppTokens.titleScreen),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -206,9 +209,9 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                   onTap: () => context.go('/dump'),
                   child: Row(
                     children: [
-                      Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
+                      Icon(Icons.arrow_back_ios, size: 14, color: AppTokens.textSecondary),
                       const SizedBox(width: 4),
-                      Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                      Text('돌아가기', style: AppTokens.label),
                     ],
                   ),
                 ),
@@ -217,41 +220,36 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                   GestureDetector(
                     onTap: () => _goToPreviousItem(items),
                     child: Text('직전 항목 수정',
-                        style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
+                        style: TextStyle(fontSize: 12, color: AppTokens.textSecondary)),
                   ),
                 const Spacer(),
                 Text(
                   '$classifiedCount / ${items.length} 분류됨',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: AppTokens.label,
                 ),
               ],
             ),
             const SizedBox(height: 24),
             // Current item card
             if (currentItem != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      currentItem.content,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
+              ProductSurface(
+                width: double.infinity,
+                child: Text(
+                  currentItem.content,
+                  style: const TextStyle(fontSize: 15, color: AppTokens.textPrimary, height: 1.5),
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             // Minimal worry helper
             Text(
               '걱정은 맡겨두면 3일 뒤 조용히 사라집니다.',
-              style: TextStyle(fontSize: 10, color: AppTheme.secondaryText.withOpacity(0.7)),
+              style: TextStyle(fontSize: 10, color: AppTokens.textMuted.withOpacity(0.7)),
             ),
             const SizedBox(height: 16),
             // Category buttons
             Expanded(
               child: _isClassifying
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: AppTokens.sagePrimary))
                   : ListView(
                       children: _categoryGroups.expand((group) {
                         final drawer = group['drawer'] as String;
@@ -259,12 +257,12 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                         return [
                           if (drawer.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 12, bottom: 4),
+                              padding: const EdgeInsets.only(top: 12, bottom: 6),
                               child: Text(drawer,
                                   style: TextStyle(
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w400,
-                                      color: AppTheme.secondaryText.withValues(alpha: 0.5))),
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTokens.textMuted.withOpacity(0.6))),
                             ),
                           ...catItems.map((cat) {
                             final isDropCategory = cat['key'] == 'DROP';
@@ -280,18 +278,18 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: isDropCategory
                                       ? AppTheme.drop
-                                      : AppTheme.primaryText,
+                                      : AppTokens.textPrimary,
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 14),
                                   alignment: Alignment.centerLeft,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(AppTokens.radiusButton),
                                   ),
                                   side: isCurrentCategory
-                                      ? BorderSide(color: AppTheme.accent, width: 2)
-                                      : null,
+                                      ? BorderSide(color: AppTokens.sagePrimary, width: 2)
+                                      : BorderSide(color: AppTokens.borderWarm),
                                   backgroundColor: isCurrentCategory
-                                      ? AppTheme.accent.withValues(alpha: 0.06)
+                                      ? AppTokens.sagePrimary.withOpacity(0.06)
                                       : null,
                                 ),
                                 child: Row(
@@ -303,7 +301,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                     Expanded(
                                       child: Text(cat['desc']!,
                                           style: TextStyle(
-                                              color: AppTheme.secondaryText,
+                                              color: AppTokens.textSecondary,
                                               fontSize: 13)),
                                     ),
                                   ],
@@ -316,10 +314,14 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                     ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed:
-                  allClassified ? () => context.go('/first-action') : null,
-              child: const Text('다음'),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed:
+                    allClassified ? () => context.go('/first-action') : null,
+                child: Text('다음', style: AppTokens.buttonPrimary),
+              ),
             ),
           ],
         ),

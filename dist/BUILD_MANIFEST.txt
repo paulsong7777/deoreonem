@@ -1,0 +1,19 @@
+DeoReoNem RC2 Build Manifest
+=============================
+Commit SHA: 5b69f51
+Build Time: 2026-06-15T20:35 KST
+Release EXE: apps/deoreonem_desktop/build/windows/x64/runner/Release/deoreonem_desktop.exe
+App.so Timestamp: 2026-06-15 20:35
+
+Source Verification:
+  docs/design/rc2_mockup1_ui_spec.md: EXISTS
+  _buildTreePreview: EXISTS in start_screen.dart
+  _MiniTreePainter: EXISTS in start_screen.dart
+  "조용한 나무" user-facing: EXISTS (10+ occurrences)
+  "작은 자리" user-facing: NONE (only in code comments)
+  "스며들었어요" user-facing: NONE
+  "덜어냄 열기" user-facing: NONE
+  "작은 자리 닫기" user-facing: NONE
+
+Tests: 117 passed
+Build: Windows release successful

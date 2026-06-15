@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'design/app_tokens.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFFFBF8F4); // warm ivory
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color border = Color(0xFFE8E4DF);
-  static const Color primaryText = Color(0xFF2C2C2C);
-  static const Color secondaryText = Color(0xFF8A8380); // warm gray, not cold
-  static const Color accent = Color(0xFF5B8C6B); // sage green
+  static const Color background = Color(0xFFFCF9F5);
+  static const Color surface = Color(0xFFFFFEFC);
+  static const Color border = Color(0xFFEDE7DD);
+  static const Color primaryText = Color(0xFF3A3530);
+  static const Color secondaryText = Color(0xFF7A7570);
+  static const Color accent = Color(0xFF5B8C6B);
   static const Color drop = Color(0xFFC4A882);
 
   static ThemeData get themeData => ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFFCF9F5),
+        scaffoldBackgroundColor: AppTokens.bgIvory,
         colorScheme: ColorScheme.light(
           primary: accent,
           surface: surface,
@@ -18,10 +19,10 @@ class AppTheme {
           onSurface: primaryText,
         ),
         cardTheme: CardThemeData(
-          elevation: 0.3,
-          color: Colors.white,
+          elevation: 0,
+          color: AppTokens.surfaceWarm,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppTokens.radiusCard),
           ),
         ),
         textTheme: const TextTheme(
@@ -31,7 +32,7 @@ class AppTheme {
             color: primaryText,
           ),
           headlineMedium: TextStyle(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.w400,
             color: primaryText,
           ),
@@ -48,34 +49,43 @@ class AppTheme {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: accent,
+            backgroundColor: AppTokens.sagePrimary,
             foregroundColor: Colors.white,
             elevation: 0,
             minimumSize: const Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
             ),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTokens.radiusButton),
             ),
-            side: const BorderSide(color: Color(0xFFDDD8D0)),
+            side: BorderSide(color: AppTokens.borderWarm),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: secondaryText,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: border),
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+            borderSide: BorderSide(color: AppTokens.borderWarm),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+            borderSide: BorderSide(color: AppTokens.borderWarm),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: accent, width: 2),
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+            borderSide: BorderSide(color: AppTokens.sagePrimary, width: 2),
           ),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       );
 }

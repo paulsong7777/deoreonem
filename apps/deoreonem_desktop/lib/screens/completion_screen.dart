@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import '../theme.dart';
+import '../design/app_tokens.dart';
 
 class CompletionScreen extends StatelessWidget {
   /// Injectable close action for testability. Defaults to exit(0) on desktop.
@@ -20,7 +20,6 @@ class CompletionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF8F5),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(48),
@@ -30,24 +29,26 @@ class CompletionScreen extends StatelessWidget {
               const Spacer(),
               Text(
                 '오늘은 여기까지\n해도 됩니다.',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontSize: 28,
-                      height: 1.4,
-                    ),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w300,
+                  color: AppTokens.textPrimary,
+                  height: 1.4,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               Text(
                 '맡겨둔 것들은 다시 꺼내볼 수 있어요.\n이제 닫고 쉬어도 됩니다.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: AppTokens.body,
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
               TextButton(
                 onPressed: _handleClose,
-                child: const Text(
+                child: Text(
                   '닫기',
-                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+                  style: TextStyle(color: AppTokens.textSecondary, fontSize: 14),
                 ),
               ),
             ],
