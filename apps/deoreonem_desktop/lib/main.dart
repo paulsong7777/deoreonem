@@ -10,6 +10,8 @@ import 'theme.dart';
 import 'providers/local_storage_provider.dart';
 import 'garden_overlay.dart';
 import 'services/runtime_paths.dart';
+import 'services/diagnostics_log.dart';
+import 'build_info.dart';
 
 const _keyMainAppRunning = 'main_app_running';
 const _keyMainAppHeartbeat = 'main_app_heartbeat';
@@ -150,6 +152,8 @@ void main(List<String> args) async {
 
   // Normal app mode
   WidgetsFlutterBinding.ensureInitialized();
+
+  logDiagnostic('START pid=$pid mode=main exe=${Platform.resolvedExecutable} commit=${BuildInfo.commitSha}');
 
   // Acquire main app exclusive lock FIRST (OS-level, released on process exit/crash)
   final acquired = _acquireMainAppLock();

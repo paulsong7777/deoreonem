@@ -9,9 +9,9 @@ import 'package:window_manager/window_manager.dart';
 import 'providers/local_storage_provider.dart';
 import 'services/local_storage_service.dart';
 import 'services/runtime_paths.dart';
+import 'services/diagnostics_log.dart';
 import 'widgets/quiet_garden_patch.dart';
 import 'theme.dart';
-import 'main.dart' show isMainAppRunning;
 
 const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
@@ -170,6 +170,8 @@ Future<void> runGardenOverlay() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+
+  logDiagnostic('START pid=$pid mode=garden exe=${Platform.resolvedExecutable}');
 
   final prefs = await SharedPreferences.getInstance();
 
@@ -346,33 +348,6 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     exit(0);
   }
 
-  bool _isLaunching = false;
-
-  void _openMainApp() async {
-    // Debounce rapid clicks
-    if (_isLaunching) return;
-    _isLaunching = true;
-
-    // Prevent duplicate main app windows
-    if (await isMainAppRunning(widget.prefs)) {
-      _isLaunching = false;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('덜어냄이 이미 열려 있어요.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
-    final exePath = Platform.resolvedExecutable;
-    await Process.start(exePath, [], mode: ProcessStartMode.detached);
-
-    // Keep debounce for 3 seconds to prevent rapid spawn
-    Future.delayed(const Duration(seconds: 3), () => _isLaunching = false);
-  }
-
   Future<void> _resetPosition() async {
     await widget.prefs.remove(_keyOverlayX);
     await widget.prefs.remove(_keyOverlayY);
@@ -381,8 +356,6 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
 
   void _handleMenuSelection(String value) {
     switch (value) {
-      case 'open':
-        _openMainApp();
       case 'reset_position':
         _resetPosition();
       case 'close':
@@ -407,7 +380,6 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
           autofocus: true,
           child: GestureDetector(
             onPanStart: (_) async => await windowManager.startDragging(),
-            onDoubleTap: _openMainApp,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Scaffold(
@@ -454,11 +426,6 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                       constraints: const BoxConstraints(maxWidth: 160),
                       onSelected: _handleMenuSelection,
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'open',
-                          height: 36,
-                          child: Text('덜어냄 열기 (두 번 클릭)', style: TextStyle(fontSize: 13)),
-                        ),
                         const PopupMenuItem(
                           value: 'reset_position',
                           height: 36,

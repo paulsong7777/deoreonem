@@ -6,6 +6,7 @@ import '../providers/session_provider.dart';
 import '../providers/summary_provider.dart';
 import '../providers/api_provider.dart';
 import '../providers/local_storage_provider.dart';
+import '../services/diagnostics_log.dart';
 
 class EntrustedSummaryScreen extends ConsumerStatefulWidget {
   const EntrustedSummaryScreen({super.key});
@@ -47,17 +48,34 @@ class _EntrustedSummaryScreenState
     setState(() => _isCompleting = true);
     try {
       await ref.read(apiServiceProvider).completeSession(session.sessionId);
-      await ref.read(localStorageProvider).saveLastCompletedSession(
-            session.sessionId,
-            DateTime.now(),
+
+      // Local persistence — mandatory. If this fails, do NOT navigate away.
+      final storage = ref.read(localStorageProvider);
+      try {
+        await storage.saveLastCompletedSession(
+          session.sessionId,
+          DateTime.now(),
+        );
+      } catch (e) {
+        logDiagnostic('SESSION_COMPLETE_FAILED sessionId=${session.sessionId} error=$e');
+        if (mounted) {
+          setState(() => _isCompleting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('세션 저장에 실패했어요: $e'), duration: const Duration(seconds: 4)),
           );
+        }
+        return; // DO NOT navigate to /complete
+      }
+
+      logDiagnostic('SESSION_COMPLETE sessionId=${session.sessionId} ids=${storage.getRecentCompletedSessionIds()} fileWriteSuccess=true');
+
       // Cache reviewable count for StartScreen
       final summary = ref.read(summaryProvider).valueOrNull;
       if (summary != null) {
         final reviewableCount = summary.itemsByCategory.entries
             .where((e) => ['TOMORROW', 'THIS_WEEK', 'WAITING', 'MEMO', 'WORRY_ONLY'].contains(e.key))
             .fold<int>(0, (sum, e) => sum + e.value.length);
-        await ref.read(localStorageProvider).setReviewableEntrustedCount(reviewableCount);
+        await storage.setReviewableEntrustedCount(reviewableCount);
       }
       if (mounted) context.go('/complete');
     } catch (e) {

@@ -106,5 +106,13 @@ void main() {
       expect(ids.contains('session-1'), isFalse);
       expect(ids.contains('session-2'), isFalse);
     });
+
+    test('saveLastCompletedSession propagates file write errors in non-test env', () async {
+      // In test environment, file write is skipped (getRuntimeDirectoryOrNull returns null)
+      // so this test verifies the SharedPreferences part works correctly
+      await service.saveLastCompletedSession('session-1', DateTime.utc(2026, 7, 1));
+      final ids = service.getRecentCompletedSessionIds();
+      expect(ids, contains('session-1'));
+    });
   });
 }

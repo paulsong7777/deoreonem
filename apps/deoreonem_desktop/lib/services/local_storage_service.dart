@@ -109,21 +109,19 @@ class LocalStorageService {
     return File('$dir\\completed_sessions.json');
   }
 
+  /// Writes session IDs to file. Throws on failure — this write is mandatory
+  /// for cross-session persistence.
   void _writeSessionIdsFile(List<String> sessionIds) {
-    try {
-      final file = _getSessionIdsFile();
-      if (file == null) return;
-      final content = jsonEncode({
-        'sessionIds': sessionIds,
-        'updatedAt': DateTime.now().toIso8601String(),
-      });
-      // Atomic-safe: write to temp file, then rename to prevent partial writes
-      final tempFile = File('${file.path}.tmp');
-      tempFile.writeAsStringSync(content, flush: true);
-      tempFile.renameSync(file.path);
-    } catch (_) {
-      // Non-critical: SharedPreferences is still the primary store
-    }
+    final file = _getSessionIdsFile();
+    if (file == null) return; // test environment — skip
+    final content = jsonEncode({
+      'sessionIds': sessionIds,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+    // Atomic write: temp → flush → rename
+    final tempFile = File('${file.path}.tmp');
+    tempFile.writeAsStringSync(content, flush: true);
+    tempFile.renameSync(file.path);
   }
 
   static List<String> _readSessionIdsFromFile() {
