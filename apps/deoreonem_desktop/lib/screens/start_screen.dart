@@ -53,135 +53,125 @@ class _StartScreenState extends ConsumerState<StartScreen> {
 
     return Scaffold(
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 780),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
-            child: Column(
-              children: [
-                const Spacer(flex: 1),
-                // === HERO + TREE PREVIEW ROW ===
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // LEFT: Hero text area
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '덜어냄',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w200,
-                              color: AppTheme.primaryText,
-                              letterSpacing: 4,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '오늘 머릿속에 남아있는 것들을\n잠시 내려놓아 보세요.',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: AppTheme.secondaryText,
-                              height: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '걱정은 잠시 맡겨두고, 필요한 것만 다시 꺼내볼 수 있습니다.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.secondaryText.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 100),
+                  // A. Hero text
+                  Text(
+                    '덜어냄',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w200,
+                      color: AppTheme.primaryText,
+                      letterSpacing: 2,
                     ),
-                    const SizedBox(width: 40),
-                    // RIGHT: Tree preview card
-                    Expanded(
-                      flex: 2,
-                      child: _buildTreePreview(),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    '오늘 머릿속에 남아있는 것들을\n잠시 내려놓아 보세요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: AppTheme.secondaryText,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '걱정은 잠시 맡겨두고, 필요한 것만 다시 꺼내볼 수 있습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.secondaryText.withOpacity(0.6),
+                    ),
+                  ),
+
+                  // B. Tree preview
+                  const SizedBox(height: 36),
+                  _buildTreePreview(),
+
+                  // C. Actions
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              // Reset state for a fresh session
+                              ref.read(itemsProvider.notifier).reset();
+                              ref.read(summaryProvider.notifier).reset();
+                              ref
+                                  .read(firstActionSelectedIdProvider.notifier)
+                                  .state = null;
+                              ref
+                                  .read(sessionProvider.notifier)
+                                  .createSession();
+                            },
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('시작하기',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                  if (hasReviewable) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => context.go('/review'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('맡겨둔 것 확인하기',
+                            style: TextStyle(fontSize: 13)),
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 40),
-                // === ACTION AREA ===
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  child: Column(
-                    children: [
-                      // Primary
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  // Reset state for a fresh session
-                                  ref.read(itemsProvider.notifier).reset();
-                                  ref.read(summaryProvider.notifier).reset();
-                                  ref
-                                      .read(
-                                          firstActionSelectedIdProvider.notifier)
-                                      .state = null;
-                                  ref
-                                      .read(sessionProvider.notifier)
-                                      .createSession();
-                                },
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Text('시작하기',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500)),
-                        ),
+                  const SizedBox(height: 14),
+                  TextButton(
+                    onPressed: _isLaunchingGarden ? null : _launchGarden,
+                    child: Text(
+                      '조용한 나무 보기',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.secondaryText.withOpacity(0.7),
                       ),
-                      if (hasReviewable) ...[
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: OutlinedButton(
-                            onPressed: () => context.go('/review'),
-                            child: const Text('맡겨둔 것 확인하기',
-                                style: TextStyle(fontSize: 13)),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed:
-                            _isLaunchingGarden ? null : _launchGarden,
-                        child: Text(
-                          '조용한 나무 보기',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.secondaryText.withOpacity(0.7),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const Spacer(flex: 2),
-                // Footer
-                Text(
-                  'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.secondaryText.withOpacity(0.35),
+
+                  // D. Footer
+                  const SizedBox(height: 48),
+                  Text(
+                    'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.secondaryText.withOpacity(0.35),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),
@@ -194,29 +184,29 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final nutrients = storage.totalWorryNutrients;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      height: 200,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F5F0),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEDE8E0), width: 0.5),
+        color: const Color(0xFFFFFEFC),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFEDE7DD), width: 0.5),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Small tree visual
           SizedBox(
-            width: 80,
-            height: 70,
+            width: 150,
+            height: 120,
             child: CustomPaint(
-              size: const Size(80, 70),
+              size: const Size(150, 120),
               painter: _MiniTreePainter(nutrients: nutrients),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             '조용한 나무',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppTheme.primaryText,
             ),
@@ -225,10 +215,9 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           Text(
             '내려놓은 걱정은 나무의 양분이 됩니다.',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               color: AppTheme.secondaryText.withOpacity(0.7),
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
