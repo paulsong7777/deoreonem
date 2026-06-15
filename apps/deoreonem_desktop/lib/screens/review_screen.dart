@@ -411,7 +411,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(

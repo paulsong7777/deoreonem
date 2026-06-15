@@ -70,14 +70,14 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFFFFEFC), // nearly white with warmth
-            Color(0xFFFBF7F0), // very subtle warm base
+            Color(0xFFFDFBF8), // much lighter, almost see-through
+            Color(0xFFF8F4ED), // barely-there warm ground
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -86,53 +86,52 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
       child: Stack(
         children: [
           Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 24), // breathing room at top for controls
-              Expanded(
-                child: Center(
-                  child: SizedBox(
-                    width: 150,
-                    height: 120,
-                    child: AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, child) {
-                        final angle = stage == PlantStage.seed
-                            ? 0.0
-                            : (_controller.value - 0.5) * 0.04;
-                        return Transform.rotate(
-                          angle: angle,
-                          alignment: Alignment.bottomCenter,
-                          child: CustomPaint(
-                            size: const Size(150, 120),
-                            painter: _GardenPainter(stage: stage),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+              const Spacer(flex: 1),
+              SizedBox(
+                width: 140,
+                height: 110,
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, child) {
+                    final angle = stage == PlantStage.seed
+                        ? 0.0
+                        : (_controller.value - 0.5) * 0.04; // ~2.3 degrees max
+                    return Transform.rotate(
+                      angle: angle,
+                      alignment: Alignment.bottomCenter,
+                      child: CustomPaint(
+                        size: const Size(140, 110),
+                        painter: _GardenPainter(stage: stage),
+                      ),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(height: 6),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   getPotSignalMessage(widget.totalNutrients),
                   style: TextStyle(
-                    fontSize: 9,
-                    color: AppTheme.secondaryText.withOpacity(0.6),
+                    fontSize: 10,
+                    color: AppTheme.secondaryText.withValues(alpha: 0.8),
                     decoration: TextDecoration.none,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
           // Subtle warm glow around ground area when nutrients increase
           Positioned(
-            bottom: 36,
+            bottom: 30,
             left: 0,
             right: 0,
             child: AnimatedBuilder(
