@@ -264,7 +264,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                   style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w400,
-                                      color: AppTheme.secondaryText.withOpacity(0.6))),
+                                      color: AppTheme.secondaryText.withValues(alpha: 0.5))),
                             ),
                           ...catItems.map((cat) {
                             final isDropCategory = cat['key'] == 'DROP';
@@ -284,6 +284,9 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),
                                   alignment: Alignment.centerLeft,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   side: isCurrentCategory
                                       ? BorderSide(color: AppTheme.accent, width: 2)
                                       : null,

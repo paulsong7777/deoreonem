@@ -70,15 +70,15 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFF7F3ED), // warm sky
-            Color(0xFFF0EAE0), // warm ground transition
+            Color(0xFFFAF8F4), // very light warm
+            Color(0xFFF5F0E8), // subtle warm ground transition
           ],
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -88,10 +88,10 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
               SizedBox(
-                width: 100,
-                height: 90,
+                width: 120,
+                height: 100,
                 child: AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -102,7 +102,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                       angle: angle,
                       alignment: Alignment.bottomCenter,
                       child: CustomPaint(
-                        size: const Size(100, 90),
+                        size: const Size(120, 100),
                         painter: _GardenPainter(stage: stage),
                       ),
                     );
@@ -126,7 +126,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 14),
             ],
           ),
           // Subtle warm glow around ground area when nutrients increase

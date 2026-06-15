@@ -401,13 +401,13 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                       child: GestureDetector(
                         onTap: _closeOverlay,
                         child: Container(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: Colors.black.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.close, size: 12,
+                          child: const Icon(Icons.close, size: 10,
                               color: AppTheme.secondaryText),
                         ),
                       ),
@@ -419,11 +419,10 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     top: 4,
                     left: 4,
                     child: PopupMenuButton<String>(
-                      tooltip: '메뉴',
-                      icon: Icon(Icons.more_horiz, size: 14,
-                          color: AppTheme.secondaryText.withValues(alpha: 0.6)),
+                      tooltip: '',
+                      icon: Icon(Icons.more_horiz, size: 12,
+                          color: AppTheme.secondaryText.withValues(alpha: 0.4)),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(maxWidth: 160),
                       onSelected: _handleMenuSelection,
                       itemBuilder: (context) => [
                         const PopupMenuItem(
