@@ -70,63 +70,60 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFFFFFFD), // almost white
-            Color(0xFFFAF6F0), // barely warm
+            Color(0xFFFFFFFE), // nearly transparent
+            Color(0xFFF9F5EE), // warm bottom
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [],
       ),
       child: Stack(
         children: [
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
-              SizedBox(
-                width: 160,
-                height: 125,
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    final angle = stage == PlantStage.seed
-                        ? 0.0
-                        : (_controller.value - 0.5) * 0.04; // ~2.3 degrees max
-                    return Transform.rotate(
-                      angle: angle,
-                      alignment: Alignment.bottomCenter,
-                      child: CustomPaint(
-                        size: const Size(160, 125),
-                        painter: _GardenPainter(stage: stage),
-                      ),
-                    );
-                  },
+              const SizedBox(height: 16), // minimal top padding for controls
+              Expanded(
+                child: Center(
+                  child: SizedBox(
+                    width: 170,
+                    height: 135,
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        final angle = stage == PlantStage.seed
+                            ? 0.0
+                            : (_controller.value - 0.5) *
+                                0.04; // ~2.3 degrees max
+                        return Transform.rotate(
+                          angle: angle,
+                          alignment: Alignment.bottomCenter,
+                          child: CustomPaint(
+                            size: const Size(170, 135),
+                            painter: _GardenPainter(stage: stage),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              // Status text — minimal, at bottom
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
                 child: Text(
                   getPotSignalMessage(widget.totalNutrients),
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     color: AppTheme.secondaryText.withValues(alpha: 0.8),
                     decoration: TextDecoration.none,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 18),
             ],
           ),
           // Subtle warm glow around ground area when nutrients increase
