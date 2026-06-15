@@ -300,6 +300,9 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
       }
       if (fresh != _currentNutrients && mounted) {
         final increased = fresh > _currentNutrients;
+        if (increased) {
+          logDiagnostic('TREE_STATE_READ total=$fresh previous=$_currentNutrients increased=true glowTriggered=true');
+        }
         setState(() => _currentNutrients = fresh);
         // Trigger subtle visual glow when nutrient increases
         if (increased) {

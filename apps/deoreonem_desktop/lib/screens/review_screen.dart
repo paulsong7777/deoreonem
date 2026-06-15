@@ -183,6 +183,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       if (mounted) {
         // Record nutrient (deduplicated — won't double-count)
         await ref.read(localStorageProvider).addWorryNutrient(item.itemId);
+        logDiagnostic('TREE_NUTRIENT_REQUEST itemId=${item.itemId} newTotal=${ref.read(localStorageProvider).totalWorryNutrients}');
 
         setState(() {
           _items.removeWhere((i) => i.itemId == item.itemId);
@@ -309,21 +310,17 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              if (_hasConvertedWorryToNutrient) ...[
-                const SizedBox(height: 8),
-                Text(
-                  '내려놓은 걱정은 조용한 나무의 양분이 되었어요.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
-                  textAlign: TextAlign.center,
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                Text(
-                  '맡겨둔 것들은 모두 조용히 정리되었어요.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              Text(
+                '맡겨둔 것들은 모두 조용히 정리되었어요.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '내려놓은 걱정은 조용한 나무의 양분이 되었어요.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 8),
               Text(
                 '필요하면 새로 비워내고, 아니면 이대로 닫아도 괜찮습니다.',
@@ -331,7 +328,6 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              // Quiet pot signal
               Text(
                 '조용한 나무가 오늘도 자라고 있어요.',
                 style: TextStyle(fontSize: 11, color: AppTheme.secondaryText.withOpacity(0.7)),

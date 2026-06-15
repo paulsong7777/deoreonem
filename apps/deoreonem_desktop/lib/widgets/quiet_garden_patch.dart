@@ -38,8 +38,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
       duration: const Duration(milliseconds: 1500),
     );
     _glowOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.4), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 0.4, end: 0.0), weight: 70),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.6), weight: 25),
+      TweenSequenceItem(tween: Tween(begin: 0.6, end: 0.0), weight: 75),
     ]).animate(CurvedAnimation(parent: _glowController, curve: Curves.easeOut));
   }
 
@@ -131,7 +131,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           ),
           // Subtle warm glow around ground area when nutrients increase
           Positioned(
-            bottom: 30,
+            bottom: 36,
             left: 0,
             right: 0,
             child: AnimatedBuilder(
@@ -142,17 +142,16 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                 }
                 return Center(
                   child: Container(
-                    width: 90,
-                    height: 40,
+                    width: 100,
+                    height: 50,
                     decoration: BoxDecoration(
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(45),
+                      borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFE8D5B7)
+                          color: const Color(0xFFD4A96A)
                               .withValues(alpha: _glowOpacity.value),
-                          blurRadius: 24,
-                          spreadRadius: 8,
+                          blurRadius: 32,
+                          spreadRadius: 12,
                         ),
                       ],
                     ),
