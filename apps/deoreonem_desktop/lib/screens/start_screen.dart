@@ -54,73 +54,75 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(48),
+          padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 48),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Spacer(flex: 2),
               Text(
                 '덜어냄',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineLarge
-                    ?.copyWith(fontSize: 36),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w300,
+                  color: AppTheme.primaryText,
+                  letterSpacing: 2,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 '오늘 머릿속에 남아있는 것들을 꺼내 보세요.',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: TextStyle(fontSize: 13, color: AppTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        // Reset state for a fresh session
-                        ref.read(itemsProvider.notifier).reset();
-                        ref.read(summaryProvider.notifier).reset();
-                        ref.read(firstActionSelectedIdProvider.notifier).state =
-                            null;
-                        ref.read(sessionProvider.notifier).createSession();
-                      },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('시작하기'),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          // Reset state for a fresh session
+                          ref.read(itemsProvider.notifier).reset();
+                          ref.read(summaryProvider.notifier).reset();
+                          ref.read(firstActionSelectedIdProvider.notifier).state =
+                              null;
+                          ref.read(sessionProvider.notifier).createSession();
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('시작하기'),
+                ),
               ),
               if (hasReviewable) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => context.go('/review'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.secondaryText,
-                    minimumSize: const Size(double.infinity, 48),
-                    side: const BorderSide(color: AppTheme.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/review'),
+                    child: const Text('맡겨둔 것 확인하기'),
                   ),
-                  child: const Text('맡겨둔 것 확인하기'),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextButton(
                 onPressed: _isLaunchingGarden ? null : _launchGarden,
                 child: const Text('작은 자리 보기',
-                    style: TextStyle(
-                        fontSize: 12, color: AppTheme.secondaryText)),
+                    style: TextStyle(fontSize: 12)),
               ),
-              const Spacer(),
+              const Spacer(flex: 3),
               Text(
                 'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 11, color: AppTheme.secondaryText),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.secondaryText.withOpacity(0.5),
+                ),
               ),
             ],
           ),
@@ -137,9 +139,13 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     if (alreadyRunning) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('작은 자리가 이미 열려 있어요.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('작은 자리가 이미 열려 있어요.', style: TextStyle(fontSize: 12)),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF6B6560),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }

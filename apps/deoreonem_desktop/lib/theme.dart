@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFFFBF9F5); // warm ivory
+  static const Color background = Color(0xFFFBF8F4); // warmer
   static const Color surface = Color(0xFFFFFFFF);
   static const Color border = Color(0xFFE8E4DF);
-  static const Color primaryText = Color(0xFF2C2C2C);
-  static const Color secondaryText = Color(0xFF8A8380); // warm gray, not cold
+  static const Color primaryText = Color(0xFF4A4540); // warm gray
+  static const Color secondaryText = Color(0xFF8C8580); // warm gray, not cold
   static const Color accent = Color(0xFF5B8C6B); // sage green
   static const Color drop = Color(0xFFC4A882);
 
@@ -48,8 +48,9 @@ class AppTheme {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: accent,
+            backgroundColor: const Color(0xFF5B8C6B),
             foregroundColor: Colors.white,
+            elevation: 0,
             minimumSize: const Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -58,10 +59,16 @@ class AppTheme {
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
+            foregroundColor: primaryText,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
-            side: const BorderSide(color: border),
+            side: const BorderSide(color: Color(0xFFDDD8D0)),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: secondaryText,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(

@@ -285,7 +285,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                       horizontal: 16, vertical: 14),
                                   alignment: Alignment.centerLeft,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   side: isCurrentCategory
                                       ? BorderSide(color: AppTheme.accent, width: 2)
