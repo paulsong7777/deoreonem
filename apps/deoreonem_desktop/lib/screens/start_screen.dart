@@ -53,76 +53,105 @@ class _StartScreenState extends ConsumerState<StartScreen> {
 
     return Scaffold(
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(48),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '덜어냄',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineLarge
-                    ?.copyWith(fontSize: 36),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '오늘 머릿속에 남아있는 것들을 꺼내 보세요.',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              ElevatedButton(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        // Reset state for a fresh session
-                        ref.read(itemsProvider.notifier).reset();
-                        ref.read(summaryProvider.notifier).reset();
-                        ref.read(firstActionSelectedIdProvider.notifier).state =
-                            null;
-                        ref.read(sessionProvider.notifier).createSession();
-                      },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('시작하기'),
-              ),
-              if (hasReviewable) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => context.go('/review'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.secondaryText,
-                    minimumSize: const Size(double.infinity, 48),
-                    side: const BorderSide(color: AppTheme.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 2),
+                // Title
+                Text(
+                  '덜어냄',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w300,
+                    color: AppTheme.primaryText,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Subtitle
+                Text(
+                  '오늘 머릿속에 남아있는 것들을\n잠시 내려놓아 보세요.',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.secondaryText,
+                      height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                // Supporting concept line
+                Text(
+                  '걱정은 잠시 맡겨두고, 필요한 것만 다시 꺼내볼 수 있습니다.',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.secondaryText.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 36),
+                // Primary button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            // Reset state for a fresh session
+                            ref.read(itemsProvider.notifier).reset();
+                            ref.read(summaryProvider.notifier).reset();
+                            ref
+                                .read(firstActionSelectedIdProvider.notifier)
+                                .state = null;
+                            ref.read(sessionProvider.notifier).createSession();
+                          },
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('시작하기',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w500)),
+                  ),
+                ),
+                if (hasReviewable) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () => context.go('/review'),
+                      child: const Text('맡겨둔 것 확인하기',
+                          style: TextStyle(fontSize: 13)),
                     ),
                   ),
-                  child: const Text('맡겨둔 것 확인하기'),
+                ],
+                const SizedBox(height: 20),
+                // Tree button — subtle
+                TextButton(
+                  onPressed: _isLaunchingGarden ? null : _launchGarden,
+                  child: Text(
+                    '조용한 나무 보기',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.secondaryText.withOpacity(0.8)),
+                  ),
+                ),
+                const Spacer(flex: 3),
+                // Footer
+                Text(
+                  'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.secondaryText.withOpacity(0.4)),
                 ),
               ],
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _isLaunchingGarden ? null : _launchGarden,
-                child: const Text('조용한 나무 보기',
-                    style: TextStyle(
-                        fontSize: 12, color: AppTheme.secondaryText)),
-              ),
-              const Spacer(),
-              Text(
-                'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 11, color: AppTheme.secondaryText),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -137,9 +166,14 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     if (alreadyRunning) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('조용한 나무가 이미 열려 있어요.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('조용한 나무가 이미 열려 있어요.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5B4A3F),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       }

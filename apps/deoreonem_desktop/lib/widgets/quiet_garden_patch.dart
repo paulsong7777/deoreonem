@@ -70,14 +70,14 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFFDFBF8), // much lighter, almost see-through
-            Color(0xFFF8F4ED), // barely-there warm ground
+            Color(0xFFFFFFFD), // almost white
+            Color(0xFFFAF6F0), // barely warm
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -88,10 +88,10 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 1),
+              const SizedBox(height: 20),
               SizedBox(
-                width: 140,
-                height: 110,
+                width: 160,
+                height: 125,
                 child: AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
@@ -102,7 +102,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                       angle: angle,
                       alignment: Alignment.bottomCenter,
                       child: CustomPaint(
-                        size: const Size(140, 110),
+                        size: const Size(160, 125),
                         painter: _GardenPainter(stage: stage),
                       ),
                     );
@@ -126,7 +126,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
             ],
           ),
           // Subtle warm glow around ground area when nutrients increase
