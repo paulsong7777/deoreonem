@@ -65,7 +65,15 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
     if (pending.isEmpty && savedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('적어놓은 내용이 없어요.'), duration: Duration(seconds: 2)),
+        SnackBar(
+          content: const Text('적어놓은 내용이 없어요.', style: TextStyle(fontSize: 13)),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF5A5550),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+          elevation: 2,
+        ),
       );
       return;
     }
@@ -73,7 +81,15 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('세션이 없어요. 처음부터 다시 시도해 주세요.'), duration: Duration(seconds: 3)),
+        SnackBar(
+          content: const Text('세션이 없어요. 처음부터 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF5A5550),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+          elevation: 2,
+        ),
       );
       return;
     }
@@ -97,7 +113,15 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('저장에 실패했어요: $e'), duration: const Duration(seconds: 4)),
+          SnackBar(
+            content: Text('저장에 실패했어요: $e', style: const TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+            elevation: 2,
+          ),
         );
       }
     }

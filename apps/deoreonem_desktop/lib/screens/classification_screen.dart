@@ -129,10 +129,18 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
   void _showClassifyError([Object? error]) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(error != null
-            ? '분류를 저장하지 못했어요: $error'
-            : '분류를 저장하지 못했어요. 다시 시도해 주세요.'),
+        content: Text(
+          error != null
+              ? '분류를 저장하지 못했어요: $error'
+              : '분류를 저장하지 못했어요. 다시 시도해 주세요.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF5A5550),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 4),
+        elevation: 2,
       ),
     );
   }

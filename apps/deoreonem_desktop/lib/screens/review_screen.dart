@@ -145,7 +145,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       if (mounted) {
         setState(() => _isStarting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('세션을 시작할 수 없어요. 다시 시도해 주세요.')),
+          SnackBar(
+            content: const Text('세션을 시작할 수 없어요. 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+            elevation: 2,
+          ),
         );
       }
     }
@@ -169,7 +177,17 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _removingIds.remove(item.itemId));
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('처리할 수 없어요. 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+            elevation: 2,
+          ),
+        );
       }
     }
   }
@@ -194,13 +212,31 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           if (visible.isEmpty) _state = _ReviewState.empty;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('걱정 하나가 조용한 나무의 양분이 되었어요.'), duration: Duration(seconds: 3)),
+          SnackBar(
+            content: const Text('걱정 하나가 조용한 나무의 양분이 되었어요.', style: TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+            elevation: 2,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _removingIds.remove(item.itemId));
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('처리할 수 없어요. 다시 시도해 주세요.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('처리할 수 없어요. 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+            elevation: 2,
+          ),
+        );
       }
     }
   }
@@ -210,7 +246,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     setState(() {}); // Refresh fade labels
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('감정 서랍에 다시 3일 맡겨두었습니다.'), duration: Duration(seconds: 2)),
+        SnackBar(
+          content: const Text('감정 서랍에 다시 3일 맡겨두었습니다.', style: TextStyle(fontSize: 13)),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF5A5550),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+          elevation: 2,
+        ),
       );
     }
   }

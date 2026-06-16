@@ -39,9 +39,16 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         error: (error, _) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$error'),
+              content: Text('$error', style: const TextStyle(fontSize: 13)),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF5A5550),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 4),
+              elevation: 2,
               action: SnackBarAction(
                 label: '다시 시도',
+                textColor: Colors.white70,
                 onPressed: () =>
                     ref.read(sessionProvider.notifier).createSession(),
               ),
@@ -137,9 +144,14 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     if (alreadyRunning) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('조용한 나무가 이미 열려 있어요.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('조용한 나무가 이미 열려 있어요.', style: TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+            elevation: 2,
           ),
         );
       }

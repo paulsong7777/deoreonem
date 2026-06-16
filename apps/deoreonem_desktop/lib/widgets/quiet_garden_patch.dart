@@ -7,12 +7,12 @@ import '../theme.dart';
 /// Not a game. Not a pet. A quiet reflection.
 class QuietGardenPatch extends StatefulWidget {
   final int totalNutrients;
-  final bool showGlow;
+  final int glowPulseId;
 
   const QuietGardenPatch({
     super.key,
     required this.totalNutrients,
-    this.showGlow = false,
+    this.glowPulseId = 0,
   });
 
   @override
@@ -46,7 +46,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
   @override
   void didUpdateWidget(covariant QuietGardenPatch oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.showGlow && !oldWidget.showGlow) {
+    if (widget.glowPulseId != oldWidget.glowPulseId && widget.glowPulseId > 0) {
       _glowController.forward(from: 0.0);
     }
   }

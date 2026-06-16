@@ -61,7 +61,15 @@ class _EntrustedSummaryScreenState
         if (mounted) {
           setState(() => _isCompleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('세션 저장에 실패했어요: $e'), duration: const Duration(seconds: 4)),
+            SnackBar(
+              content: Text('세션 저장에 실패했어요: $e', style: const TextStyle(fontSize: 13)),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF5A5550),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 4),
+              elevation: 2,
+            ),
           );
         }
         return; // DO NOT navigate to /complete
@@ -82,7 +90,15 @@ class _EntrustedSummaryScreenState
       if (mounted) {
         setState(() => _isCompleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
+          SnackBar(
+            content: Text('$e', style: const TextStyle(fontSize: 13)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF5A5550),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+            elevation: 2,
+          ),
         );
       }
     }

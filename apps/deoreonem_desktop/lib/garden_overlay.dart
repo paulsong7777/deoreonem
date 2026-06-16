@@ -275,8 +275,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   Timer? _saveTimer;
   Timer? _refreshTimer;
   late int _currentNutrients;
-  bool _showNutrientGlow = false;
-  Timer? _glowTimer;
+  int _glowPulseId = 0;
 
   @override
   void initState() {
@@ -301,12 +300,13 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
       if (fresh != _currentNutrients && mounted) {
         final increased = fresh > _currentNutrients;
         if (increased) {
-          logDiagnostic('TREE_STATE_READ total=$fresh previous=$_currentNutrients increased=true glowTriggered=true');
-        }
-        setState(() => _currentNutrients = fresh);
-        // Trigger subtle visual glow when nutrient increases
-        if (increased) {
-          _triggerNutrientGlow();
+          logDiagnostic('TREE_STATE_READ total=$fresh previous=$_currentNutrients increased=true');
+          setState(() {
+            _currentNutrients = fresh;
+            _glowPulseId++;
+          });
+        } else {
+          setState(() => _currentNutrients = fresh);
         }
       }
       // Update heartbeat every cycle (1s is fine for a lightweight write)
@@ -314,27 +314,10 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     });
   }
 
-  /// Triggers a brief warm glow effect when a new nutrient is absorbed.
-  /// Forces false→true transition so didUpdateWidget always detects the change.
-  void _triggerNutrientGlow() {
-    if (!mounted) return;
-    _glowTimer?.cancel();
-    setState(() => _showNutrientGlow = false);
-    Future.microtask(() {
-      if (mounted) {
-        setState(() => _showNutrientGlow = true);
-        _glowTimer = Timer(const Duration(milliseconds: 1500), () {
-          if (mounted) setState(() => _showNutrientGlow = false);
-        });
-      }
-    });
-  }
-
   @override
   void dispose() {
     _saveTimer?.cancel();
     _refreshTimer?.cancel();
-    _glowTimer?.cancel();
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -396,7 +379,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     // Garden visual — the main focus
                     QuietGardenPatch(
                       totalNutrients: _currentNutrients,
-                      showGlow: _showNutrientGlow,
+                      glowPulseId: _glowPulseId,
                     ),
 
                   // Close button (top-right, subtle)
