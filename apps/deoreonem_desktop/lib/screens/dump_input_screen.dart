@@ -8,9 +8,14 @@ import '../theme.dart';
 // KOREAN IME STABILITY RULE:
 // The TextField must NEVER be rebuilt by parent state changes during typing.
 // Korean syllable composition (받침 → 모음 transitions) is interrupted if
-// the widget tree above the TextField rebuilds. This isolated widget ensures
-// no provider state, savedItems list, or error state can trigger a rebuild
-// that disrupts IME composition.
+// the widget tree changes layout above or around the TextField.
+//
+// Critical rules:
+// 1. Do NOT use ref.watch in the build method — it triggers rebuilds.
+// 2. Do NOT render dynamic content (like savedItems list) in the same
+//    Column as the TextField — layout shifts disrupt IME.
+// 3. The TextField widget must be in a FIXED layout position that never
+//    changes size or position during typing.
 
 class DumpInputScreen extends ConsumerStatefulWidget {
   const DumpInputScreen({super.key});
@@ -20,8 +25,23 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 }
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
-  final GlobalKey<_StableTextInputState> _inputKey = GlobalKey<_StableTextInputState>();
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   /// Parse multiline text into non-empty trimmed lines
   List<String> _parseLines(String text) {
@@ -32,16 +52,12 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         .toList();
   }
 
-  /// Save all lines to API and navigate to classify.
-  /// Validates on click — if nothing to save, shows gentle feedback.
   Future<void> _navigateToClassify() async {
     if (_isSaving) return;
 
-    final text = _inputKey.currentState?.text ?? '';
-    final lines = _parseLines(text);
+    final lines = _parseLines(_controller.text);
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
     if (lines.isEmpty && savedItems.isEmpty) {
-      // Nothing entered yet — gentle nudge, no crash
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('적어놓은 내용이 없어요.'),
@@ -53,7 +69,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
 
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) {
-      debugPrint('[DumpInput] session is null — cannot save items');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('세션이 없어요. 처음부터 다시 시도해 주세요.'),
@@ -64,7 +79,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     }
 
     if (lines.isEmpty) {
-      // Nothing new to save, just navigate
       context.go('/classify');
       return;
     }
@@ -75,13 +89,12 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
       }
       if (mounted) {
-        _inputKey.currentState?.clear();
+        _controller.clear();
         setState(() => _isSaving = false);
         context.go('/classify');
       }
     } catch (e) {
       if (mounted) {
-        // Keep text on failure so user doesn't lose input
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -95,9 +108,8 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final itemsState = ref.watch(itemsProvider);
-    final savedItems = itemsState.valueOrNull ?? [];
-
+    // CRITICAL: No ref.watch here. No provider-dependent content in this Column.
+    // The layout is STATIC during typing — nothing above the TextField changes.
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -131,41 +143,29 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-            // Already saved items (from previous interaction or API)
-            if (savedItems.isNotEmpty) ...[
-              ...savedItems.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle_outline,
-                            size: 14, color: AppTheme.accent),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(item.content,
-                              style: TextStyle(
-                                  fontSize: 13, color: AppTheme.secondaryText)),
-                        ),
-                      ],
-                    ),
-                  )),
-              const Divider(height: 24),
-            ],
-            // Isolated TextField — NEVER rebuilt by provider state changes.
-            // See _StableTextInput class and KOREAN IME STABILITY RULE above.
+            // FIXED-SIZE text input area. No dynamic savedItems list above.
+            // The TextField position/size never changes during typing.
             Expanded(
-              child: _StableTextInput(
-                key: _inputKey,
-                isSaving: _isSaving,
-                onSubmit: (_) => _navigateToClassify(),
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                autofocus: true,
+                // Do NOT toggle enabled during typing. Only disable when navigating away.
+                decoration: InputDecoration(
+                  hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
+                  hintMaxLines: 10,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppTheme.border),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            // Button always enabled — validates on click only.
-            // IMPORTANT: Do NOT use ValueListenableBuilder or onChanged with
-            // TextEditingController. Listening to the controller causes widget
-            // rebuilds during IME composition, which crashes Korean (한글) input
-            // on Windows. The button stays enabled; empty-input is handled
-            // gracefully in _navigateToClassify.
             ElevatedButton(
               onPressed: _isSaving ? null : _navigateToClassify,
               child: _isSaving
@@ -179,69 +179,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Isolated text input widget — NEVER rebuilt by provider state changes.
-/// This prevents Korean IME composition from being interrupted.
-class _StableTextInput extends StatefulWidget {
-  final bool isSaving;
-  final ValueChanged<String> onSubmit;
-
-  const _StableTextInput({
-    super.key,
-    required this.isSaving,
-    required this.onSubmit,
-  });
-
-  @override
-  State<_StableTextInput> createState() => _StableTextInputState();
-}
-
-class _StableTextInputState extends State<_StableTextInput> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  String get text => _controller.text;
-
-  void clear() => _controller.clear();
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      maxLines: null,
-      expands: true,
-      textAlignVertical: TextAlignVertical.top,
-      autofocus: true,
-      enabled: !widget.isSaving,
-      // NO onChanged, NO onSubmitted, NO inputFormatters
-      // NO keyboard shortcuts that intercept during composition
-      decoration: InputDecoration(
-        hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
-        hintMaxLines: 10,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        contentPadding: const EdgeInsets.all(16),
       ),
     );
   }
