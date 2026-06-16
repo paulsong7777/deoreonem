@@ -5,18 +5,10 @@ import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../theme.dart';
 
-// KOREAN IME STABILITY RULE:
-// The TextField must NEVER be rebuilt by parent state changes during typing.
-// Korean syllable composition (받침 → 모음 transitions) is interrupted if
-// the widget tree changes layout above or around the TextField.
-//
-// Critical rules:
-// 1. Do NOT use ref.watch in the build method — it triggers rebuilds.
-// 2. Do NOT render dynamic content (like savedItems list) in the same
-//    Column as the TextField — layout shifts disrupt IME.
-// 3. The TextField widget must be in a FIXED layout position that never
-//    changes size or position during typing.
-
+/// DumpInputScreen — single-line thought capture.
+/// Uses single-line TextField to avoid Windows Korean IME multiline instability.
+/// User enters one thought at a time, adds it to a local pending list,
+/// then submits all to the API via "분류하기".
 class DumpInputScreen extends ConsumerStatefulWidget {
   const DumpInputScreen({super.key});
 
@@ -27,6 +19,7 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
+  final List<String> _pendingThoughts = [];
   bool _isSaving = false;
 
   @override
@@ -34,7 +27,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     super.initState();
     _controller = TextEditingController();
     _focusNode = FocusNode();
-    // Request focus after first frame — avoids autofocus race with IME initialization
+    // Request focus after frame to avoid IME init race
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
@@ -47,21 +40,40 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     super.dispose();
   }
 
-  /// Parse multiline text into non-empty trimmed lines
-  List<String> _parseLines(String text) {
-    return text
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
+  void _addThought() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _pendingThoughts.add(text);
+    });
+    _controller.clear();
+    // Keep focus on input for next thought
+    _focusNode.requestFocus();
+  }
+
+  void _removeThought(int index) {
+    setState(() {
+      _pendingThoughts.removeAt(index);
+    });
+  }
+
+  void _onFieldSubmitted(String value) {
+    // Enter pressed — add the thought if composition is committed
+    _addThought();
   }
 
   Future<void> _navigateToClassify() async {
     if (_isSaving) return;
 
-    final lines = _parseLines(_controller.text);
+    // If there's text in the field but not yet added, add it first
+    final currentText = _controller.text.trim();
+    if (currentText.isNotEmpty) {
+      _pendingThoughts.add(currentText);
+      _controller.clear();
+    }
+
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
-    if (lines.isEmpty && savedItems.isEmpty) {
+    if (_pendingThoughts.isEmpty && savedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('적어놓은 내용이 없어요.'),
@@ -82,18 +94,18 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
       return;
     }
 
-    if (lines.isEmpty) {
+    if (_pendingThoughts.isEmpty) {
       context.go('/classify');
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      for (final text in lines) {
+      for (final text in _pendingThoughts) {
         await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
       }
       if (mounted) {
-        _controller.clear();
+        _pendingThoughts.clear();
         setState(() => _isSaving = false);
         context.go('/classify');
       }
@@ -112,14 +124,13 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // CRITICAL: No ref.watch here. No provider-dependent content in this Column.
-    // The layout is STATIC during typing — nothing above the TextField changes.
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Back navigation
             GestureDetector(
               onTap: () => context.go('/'),
               child: Row(
@@ -130,61 +141,112 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text('오늘 남은 것들',
-                style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 16),
+            // Title
+            Text('마음에 남은 것을 하나씩 덜어내세요.',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20)),
             const SizedBox(height: 8),
             Text(
-              '머릿속에 남아 있는 걸 줄마다 적어보세요.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '정리되지 않아도 괜찮습니다. 한 줄에 하나씩 내려놓으면 됩니다.',
+              '완벽히 정리하지 않아도 괜찮습니다. 떠오른 생각을 하나씩 적어두면 됩니다.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 13,
                     color: AppTheme.secondaryText,
                   ),
             ),
-            const SizedBox(height: 16),
-            // FIXED-SIZE text input area. No dynamic savedItems list above.
-            // The TextField position/size never changes during typing.
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                // NO autofocus — focus requested via postFrameCallback to avoid
-                // race condition with Windows IME initialization.
-                // enableIMEPersonalizedLearning disabled to prevent Windows IME
-                // from interfering with composition state.
-                enableIMEPersonalizedLearning: false,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
-                  hintMaxLines: 10,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.border),
+            const SizedBox(height: 24),
+            // Single-line input row — FIXED position, never moves
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    // SINGLE LINE — stable with Korean IME on Windows
+                    maxLines: 1,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: _onFieldSubmitted,
+                    enableIMEPersonalizedLearning: false,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      hintText: '떠오른 생각을 하나씩 적어주세요.',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppTheme.border),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.all(16),
                 ),
-              ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _addThought,
+                    child: const Text('추가'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Pending thoughts list — renders BELOW the input (never shifts it)
+            if (_pendingThoughts.isNotEmpty) ...[
+              Text('방금 덜어낸 생각',
+                  style: TextStyle(fontSize: 12, color: AppTheme.secondaryText, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+            ],
+            Expanded(
+              child: _pendingThoughts.isEmpty
+                  ? Center(
+                      child: Text(
+                        '아직 적어둔 생각이 없습니다.',
+                        style: TextStyle(fontSize: 13, color: AppTheme.secondaryText.withOpacity(0.6)),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _pendingThoughts.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppTheme.border.withOpacity(0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(_pendingThoughts[index],
+                                      style: const TextStyle(fontSize: 14)),
+                                ),
+                                GestureDetector(
+                                  onTap: () => _removeThought(index),
+                                  child: Icon(Icons.close, size: 16,
+                                      color: AppTheme.secondaryText.withOpacity(0.5)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _isSaving ? null : _navigateToClassify,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('분류하기'),
+            // Submit button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _navigateToClassify,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('분류하기', style: TextStyle(fontSize: 15)),
+              ),
             ),
           ],
         ),
