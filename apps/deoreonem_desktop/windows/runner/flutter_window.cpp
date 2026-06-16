@@ -2,7 +2,11 @@
 
 #include <optional>
 
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
 #include "flutter/generated_plugin_registrant.h"
+#include "native_input_dialog.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -26,6 +30,31 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+
+  // Register native input method channel for Korean IME support
+  auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(),
+      "deoreonem/native_input",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  channel->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "openThoughtInput") {
+          auto text = ShowNativeInputDialog(GetHandle());
+          if (text.has_value()) {
+            // Convert wstring to UTF-8
+            int size = WideCharToMultiByte(CP_UTF8, 0, text->c_str(), -1, nullptr, 0, nullptr, nullptr);
+            std::string utf8(size - 1, '\0');
+            WideCharToMultiByte(CP_UTF8, 0, text->c_str(), -1, &utf8[0], size, nullptr, nullptr);
+            result->Success(flutter::EncodableValue(utf8));
+          } else {
+            result->Success(flutter::EncodableValue());  // null
+          }
+        } else {
+          result->NotImplemented();
+        }
+      });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../theme.dart';
 
-/// DumpInputScreen — single-line thought capture.
-/// Uses single-line TextField to avoid Windows Korean IME multiline instability.
-/// User enters one thought at a time, adds it to a local pending list,
-/// then submits all to the API via "분류하기".
+const _nativeInputChannel = MethodChannel('deoreonem/native_input');
+
 class DumpInputScreen extends ConsumerStatefulWidget {
   const DumpInputScreen({super.key});
 
@@ -17,38 +16,25 @@ class DumpInputScreen extends ConsumerStatefulWidget {
 }
 
 class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
   final List<String> _pendingThoughts = [];
   bool _isSaving = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-    _focusNode = FocusNode();
-    // Request focus after frame to avoid IME init race
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _addThought() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      _pendingThoughts.add(text);
-    });
-    _controller.clear();
-    // Keep focus on input for next thought
-    _focusNode.requestFocus();
+  Future<void> _openNativeInput() async {
+    try {
+      final result = await _nativeInputChannel.invokeMethod<String?>('openThoughtInput');
+      if (result != null && result.trim().isNotEmpty) {
+        setState(() {
+          _pendingThoughts.add(result.trim());
+        });
+      }
+    } on PlatformException catch (_) {
+      // Native dialog not available — show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('입력 대화상자를 열 수 없어요.')),
+        );
+      }
+    }
   }
 
   void _removeThought(int index) {
@@ -57,20 +43,8 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     });
   }
 
-  void _onFieldSubmitted(String value) {
-    // Enter pressed — add the thought if composition is committed
-    _addThought();
-  }
-
   Future<void> _navigateToClassify() async {
     if (_isSaving) return;
-
-    // If there's text in the field but not yet added, add it first
-    final currentText = _controller.text.trim();
-    if (currentText.isNotEmpty) {
-      _pendingThoughts.add(currentText);
-      _controller.clear();
-    }
 
     final savedItems = ref.read(itemsProvider).valueOrNull ?? [];
     if (_pendingThoughts.isEmpty && savedItems.isEmpty) {
@@ -130,7 +104,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Back navigation
             GestureDetector(
               onTap: () => context.go('/'),
               child: Row(
@@ -142,7 +115,6 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Title
             Text('마음에 남은 것을 하나씩 덜어내세요.',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20)),
             const SizedBox(height: 8),
@@ -154,57 +126,39 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   ),
             ),
             const SizedBox(height: 24),
-            // Single-line input row — FIXED position, never moves
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    // SINGLE LINE — stable with Korean IME on Windows
-                    maxLines: 1,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: _onFieldSubmitted,
-                    enableIMEPersonalizedLearning: false,
-                    enableSuggestions: false,
-                    autocorrect: false,
-                    decoration: InputDecoration(
-                      hintText: '떠오른 생각을 하나씩 적어주세요.',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: AppTheme.border),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
-                  ),
+            // Native input button — opens Win32 dialog for stable Korean IME
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _openNativeInput,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('생각 적기'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _addThought,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(64, 48), // Override theme's infinite width
-                    ),
-                    child: const Text('추가'),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 20),
-            // Pending thoughts list — renders BELOW the input (never shifts it)
             if (_pendingThoughts.isNotEmpty) ...[
-              Text('방금 덜어낸 생각',
+              Text('방금 덜어낸 생각 (${_pendingThoughts.length}개)',
                   style: TextStyle(fontSize: 12, color: AppTheme.secondaryText, fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
             ],
             Expanded(
               child: _pendingThoughts.isEmpty
                   ? Center(
-                      child: Text(
-                        '아직 적어둔 생각이 없습니다.',
-                        style: TextStyle(fontSize: 13, color: AppTheme.secondaryText.withOpacity(0.6)),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lightbulb_outline, size: 32, color: AppTheme.secondaryText.withOpacity(0.3)),
+                          const SizedBox(height: 8),
+                          Text(
+                            '"생각 적기"를 눌러 떠오르는 생각을 하나씩 적어주세요.',
+                            style: TextStyle(fontSize: 13, color: AppTheme.secondaryText.withOpacity(0.6)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
@@ -238,15 +192,13 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                     ),
             ),
             const SizedBox(height: 16),
-            // Submit button
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : _navigateToClassify,
+                onPressed: (_isSaving || _pendingThoughts.isEmpty) ? null : _navigateToClassify,
                 child: _isSaving
-                    ? const SizedBox(
-                        width: 20, height: 20,
+                    ? const SizedBox(width: 20, height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text('분류하기', style: TextStyle(fontSize: 15)),
               ),
