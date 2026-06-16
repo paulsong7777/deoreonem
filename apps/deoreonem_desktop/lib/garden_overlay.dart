@@ -276,6 +276,8 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   Timer? _refreshTimer;
   late int _currentNutrients;
   int _glowPulseId = 0;
+  int _pendingGlowPulses = 0;
+  bool _isDrainingGlow = false;
   int _lastEventId = 0;
 
   @override
@@ -285,37 +287,49 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     _lastEventId = widget.totalNutrients;
     windowManager.addListener(this);
 
-    // Poll nutrient state every 2 seconds to reduce file I/O pressure.
-    // Uses file-based sync first (reliable on Windows), falls back to SharedPreferences.
+    // Poll nutrient state every 800ms for responsive garden updates.
+    // Uses async file read first (reliable on Windows), falls back to SharedPreferences.
     // Also update heartbeat for instance lock every cycle.
-    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      int? fresh;
-      int? eventId;
-      // Try file-based sync first (written by main app after worry let-go)
-      final fromFile = LocalStorageService.readGardenStateFromFile();
-      if (fromFile != null) {
-        fresh = fromFile;
-        eventId = LocalStorageService.readGardenEventIdFromFile() ?? fromFile;
+    _refreshTimer = Timer.periodic(const Duration(milliseconds: 800), (_) async {
+      final snapshot = await LocalStorageService.readGardenStateSnapshotAsync();
+      int fresh = _currentNutrients;
+      int eventId = _lastEventId;
+
+      if (snapshot != null) {
+        fresh = snapshot.total;
+        eventId = snapshot.eventId;
       } else {
-        // Fall back to SharedPreferences reload
+        // Fallback to SharedPreferences
         await widget.prefs.reload();
         fresh = widget.prefs.getInt('total_worry_nutrients') ?? 0;
         eventId = fresh;
       }
-      if (mounted && eventId != null && eventId > _lastEventId) {
+
+      if (eventId > _lastEventId && mounted) {
         final delta = eventId - _lastEventId;
         _lastEventId = eventId;
         logDiagnostic('TREE_STATE_READ total=$fresh previous=$_currentNutrients delta=$delta');
-        setState(() {
-          _currentNutrients = fresh!;
-          _glowPulseId += delta; // Trigger N pulses for N events
-        });
-      } else if (mounted && fresh != null && fresh != _currentNutrients) {
-        setState(() => _currentNutrients = fresh!);
+        setState(() => _currentNutrients = fresh);
+        _pendingGlowPulses += delta;
+        _drainGlowQueue();
+      } else if (fresh != _currentNutrients && mounted) {
+        setState(() => _currentNutrients = fresh);
       }
-      // Update heartbeat every cycle (1s is fine for a lightweight write)
+
+      // Update heartbeat
       await widget.prefs.setString(_keyOverlayHeartbeat, DateTime.now().toIso8601String());
     });
+  }
+
+  void _drainGlowQueue() async {
+    if (_isDrainingGlow) return;
+    _isDrainingGlow = true;
+    while (_pendingGlowPulses > 0 && mounted) {
+      _pendingGlowPulses--;
+      setState(() => _glowPulseId++);
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    _isDrainingGlow = false;
   }
 
   @override

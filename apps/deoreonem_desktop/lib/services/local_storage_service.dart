@@ -168,6 +168,7 @@ class LocalStorageService {
 
   static const _keyTotalWorryNutrients = 'total_worry_nutrients';
   static const _keyNutrientCreatedItemIds = 'nutrient_created_item_ids';
+  static const _keyNutrientEventId = 'nutrient_event_id';
 
   int get totalWorryNutrients => _prefs.getInt(_keyTotalWorryNutrients) ?? 0;
 
@@ -189,6 +190,9 @@ class LocalStorageService {
     final newTotal = current + 1;
     await _prefs.setInt(_keyTotalWorryNutrients, newTotal);
 
+    final eventId = (_prefs.getInt(_keyNutrientEventId) ?? 0) + 1;
+    await _prefs.setInt(_keyNutrientEventId, eventId);
+
     // Fire-and-forget: write garden state file for reliable cross-process sync.
     // SharedPreferences.reload() is unreliable on Windows in some scenarios.
     // Do NOT await — this is non-critical and must not block the caller.
@@ -201,10 +205,11 @@ class LocalStorageService {
     try {
       final file = _getGardenStateFile();
       if (file == null) return;
+      final eventId = _prefs.getInt(_keyNutrientEventId) ?? totalNutrients;
       file.writeAsString(
         jsonEncode({
           'totalWorryNutrients': totalNutrients,
-          'lastNutrientEventId': totalNutrients, // Use total as monotonic event ID
+          'lastNutrientEventId': eventId,
           'updatedAt': DateTime.now().toIso8601String(),
         }),
       );
@@ -229,6 +234,21 @@ class LocalStorageService {
       final content = file.readAsStringSync();
       final map = jsonDecode(content) as Map<String, dynamic>;
       return map['totalWorryNutrients'] as int?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Reads garden state snapshot asynchronously. Returns null if unavailable.
+  static Future<({int total, int eventId})?> readGardenStateSnapshotAsync() async {
+    try {
+      final file = _getGardenStateFile();
+      if (file == null || !file.existsSync()) return null;
+      final content = await file.readAsString();
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      final total = map['totalWorryNutrients'] as int? ?? 0;
+      final eventId = map['lastNutrientEventId'] as int? ?? total;
+      return (total: total, eventId: eventId);
     } catch (_) {
       return null;
     }
