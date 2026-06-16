@@ -17,8 +17,8 @@ const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
 const _keyOverlayRunning = 'garden_overlay_running';
 const _keyOverlayHeartbeat = 'garden_overlay_heartbeat';
-const _windowWidth = 240.0;
-const _windowHeight = 270.0;
+const _windowWidth = 220.0;
+const _windowHeight = 240.0;
 const _staleThresholdSeconds = 15;
 
 /// Validates that a window position is within reasonable bounds.
@@ -407,7 +407,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                           width: 14,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.03),
+                            color: Colors.black.withValues(alpha: 0.04),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.close, size: 8,
@@ -424,7 +424,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                     child: PopupMenuButton<String>(
                       tooltip: '',
                       icon: Icon(Icons.more_horiz, size: 10,
-                          color: AppTheme.secondaryText.withValues(alpha: 0.15)),
+                          color: AppTheme.secondaryText.withValues(alpha: 0.18)),
                       padding: EdgeInsets.zero,
                       onSelected: _handleMenuSelection,
                       itemBuilder: (context) => [

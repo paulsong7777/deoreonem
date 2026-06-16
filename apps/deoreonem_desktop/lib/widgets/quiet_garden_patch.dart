@@ -70,11 +70,11 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFFFFFFE), // nearly white
-            Color(0xFFF8F4ED), // barely warm
+            Color(0xFFFFFFFE), // nearly transparent
+            Color(0xFFF9F5EE), // warm bottom
           ],
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: const [],
       ),
       child: Stack(
@@ -85,8 +85,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
               Expanded(
                 child: Center(
                   child: SizedBox(
-                    width: 180,
-                    height: 150,
+                    width: 170,
+                    height: 135,
                     child: AnimatedBuilder(
                       animation: _controller,
                       builder: (context, child) {
@@ -98,7 +98,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                           angle: angle,
                           alignment: Alignment.bottomCenter,
                           child: CustomPaint(
-                            size: const Size(180, 150),
+                            size: const Size(170, 135),
                             painter: _GardenPainter(stage: stage),
                           ),
                         );
@@ -128,7 +128,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
           ),
           // Subtle warm glow around ground area when nutrients increase
           Positioned(
-            bottom: 40,
+            bottom: 36,
             left: 0,
             right: 0,
             child: AnimatedBuilder(
@@ -139,8 +139,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                 }
                 return Center(
                   child: Container(
-                    width: 110,
-                    height: 55,
+                    width: 100,
+                    height: 50,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
