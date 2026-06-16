@@ -108,16 +108,11 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('오늘 남은 것들', style: AppTokens.titleScreen),
+            Text('마음속에 담긴 것을 적어주세요.', style: AppTokens.heading),
             const SizedBox(height: 8),
             Text(
-              '머릿속에 남아 있는 걸 줄마다 적어보세요.',
-              style: AppTokens.body,
-            ),
-            const SizedBox(height: 4),
-            Text(
               '정리되지 않아도 괜찮습니다. 한 줄에 하나씩 내려놓으면 됩니다.',
-              style: AppTokens.bodyMuted,
+              style: AppTokens.body,
             ),
             const SizedBox(height: 20),
             // Already saved items (from previous interaction or API)

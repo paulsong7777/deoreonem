@@ -134,7 +134,7 @@ class _EntrustedSummaryScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('오늘의 덜어냄', style: AppTokens.titleScreen),
+                Text('잘 맡겨두었어요', style: AppTokens.heading),
                 const SizedBox(height: 6),
                 GestureDetector(
                   onTap: () => context.go('/first-action'),

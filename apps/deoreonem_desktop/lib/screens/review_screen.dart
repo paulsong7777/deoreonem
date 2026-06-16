@@ -484,7 +484,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('잠시 맡겨둔 서랍', style: AppTokens.titleScreen),
+            Text('잠시 맡겨둔 서랍', style: AppTokens.heading),
             const SizedBox(height: 8),
             Text(
               '필요한 서랍만 열어 확인합니다.',

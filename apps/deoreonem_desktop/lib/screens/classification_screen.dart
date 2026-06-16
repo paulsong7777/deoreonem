@@ -201,7 +201,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('분류하기', style: AppTokens.titleScreen),
+            Text('이것은 어떤 것에 가까운가요?', style: AppTokens.heading),
             const SizedBox(height: 8),
             Row(
               children: [
