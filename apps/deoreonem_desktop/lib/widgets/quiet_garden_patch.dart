@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/plant_stage_helper.dart';
-import '../design/app_tokens.dart';
+import '../theme.dart';
 
 /// A small calm garden visual representing the plant stage.
-/// Visual metaphor: 내려놓은 걱정이 조용한 나무의 양분이 되어 자란다.
+/// Visual metaphor: 내려놓은 걱정이 작은 자리에 스며들어 조용히 나무가 자란다.
 /// Not a game. Not a pet. A quiet reflection.
 class QuietGardenPatch extends StatefulWidget {
   final int totalNutrients;
@@ -74,7 +74,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
             Color(0xFFF8F4ED), // barely warm
           ],
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: const [],
       ),
       child: Stack(
@@ -114,7 +114,7 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                   getPotSignalMessage(widget.totalNutrients),
                   style: TextStyle(
                     fontSize: 9,
-                    color: AppTokens.textSecondary.withOpacity(0.8),
+                    color: AppTheme.secondaryText.withValues(alpha: 0.8),
                     decoration: TextDecoration.none,
                     fontWeight: FontWeight.w400,
                     height: 1.4,
@@ -145,8 +145,8 @@ class _QuietGardenPatchState extends State<QuietGardenPatch>
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTokens.glowAmber
-                              .withOpacity(_glowOpacity.value),
+                          color: const Color(0xFFD4A96A)
+                              .withValues(alpha: _glowOpacity.value),
                           blurRadius: 32,
                           spreadRadius: 12,
                         ),
@@ -176,7 +176,7 @@ class _GardenPainter extends CustomPainter {
     // --- Ground layers ---
     // Soft shadow under ground
     final shadowPaint = Paint()
-      ..color = const Color(0xFF8B7355).withOpacity(0.12);
+      ..color = const Color(0xFF8B7355).withValues(alpha: 0.12);
     canvas.drawOval(
       Rect.fromCenter(center: Offset(cx, groundY + 3), width: 72, height: 10),
       shadowPaint,
@@ -184,7 +184,7 @@ class _GardenPainter extends CustomPainter {
 
     // Main ground mound
     final groundPaint = Paint()
-      ..color = const Color(0xFFB5A48B).withOpacity(0.5);
+      ..color = const Color(0xFFB5A48B).withValues(alpha: 0.5);
     final groundWidth = stage == PlantStage.quietTree ? 74.0 : 64.0;
     canvas.drawOval(
       Rect.fromCenter(center: Offset(cx, groundY), width: groundWidth, height: 16),
@@ -193,7 +193,7 @@ class _GardenPainter extends CustomPainter {
 
     // Darker soil center
     final soilPaint = Paint()
-      ..color = const Color(0xFF8B7355).withOpacity(0.25);
+      ..color = const Color(0xFF8B7355).withValues(alpha: 0.25);
     canvas.drawOval(
       Rect.fromCenter(center: Offset(cx, groundY), width: groundWidth * 0.6, height: 10),
       soilPaint,
@@ -202,7 +202,7 @@ class _GardenPainter extends CustomPainter {
     // Tiny grass hints (small lines around mound)
     if (stage != PlantStage.seed) {
       final grassPaint = Paint()
-        ..color = const Color(0xFF8FAF8F).withOpacity(0.4)
+        ..color = const Color(0xFF8FAF8F).withValues(alpha: 0.4)
         ..strokeWidth = 1.0
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(Offset(cx - 20, groundY - 4), Offset(cx - 22, groundY - 8), grassPaint);
@@ -213,7 +213,7 @@ class _GardenPainter extends CustomPainter {
     if (stage == PlantStage.seed) {
       // Small seed mark
       final seedPaint = Paint()
-        ..color = const Color(0xFF8B7355).withOpacity(0.4);
+        ..color = const Color(0xFF8B7355).withValues(alpha: 0.4);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx, groundY - 2), width: 6, height: 4),
         seedPaint,
@@ -253,7 +253,7 @@ class _GardenPainter extends CustomPainter {
     final leafColor = const Color(0xFF7B9E87);
 
     if (stage == PlantStage.sprout) {
-      final leafPaint = Paint()..color = leafColor.withOpacity(0.7);
+      final leafPaint = Paint()..color = leafColor.withValues(alpha: 0.7);
       // Two small elliptical leaves
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx - 5, stemTop.dy + 3), width: 10, height: 7),
@@ -264,7 +264,7 @@ class _GardenPainter extends CustomPainter {
         leafPaint,
       );
     } else if (stage == PlantStage.smallLeaf) {
-      final leafPaint = Paint()..color = leafColor.withOpacity(0.65);
+      final leafPaint = Paint()..color = leafColor.withValues(alpha: 0.65);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx - 7, stemTop.dy + 4), width: 12, height: 9),
         leafPaint,
@@ -278,32 +278,32 @@ class _GardenPainter extends CustomPainter {
         leafPaint,
       );
     } else if (stage == PlantStage.youngPlant) {
-      final leafPaint = Paint()..color = leafColor.withOpacity(0.6);
+      final leafPaint = Paint()..color = leafColor.withValues(alpha: 0.6);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx, stemTop.dy + 3), width: 26, height: 20),
         leafPaint,
       );
       // Small highlight
-      final highlightPaint = Paint()..color = leafColor.withOpacity(0.35);
+      final highlightPaint = Paint()..color = leafColor.withValues(alpha: 0.35);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx - 3, stemTop.dy - 2), width: 14, height: 10),
         highlightPaint,
       );
     } else if (stage == PlantStage.quietTree) {
       // Main canopy — soft layered
-      final canopyPaint = Paint()..color = leafColor.withOpacity(0.55);
+      final canopyPaint = Paint()..color = leafColor.withValues(alpha: 0.55);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx, stemTop.dy + 6), width: 40, height: 30),
         canopyPaint,
       );
       // Upper layer
-      final upperPaint = Paint()..color = leafColor.withOpacity(0.4);
+      final upperPaint = Paint()..color = leafColor.withValues(alpha: 0.4);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx, stemTop.dy - 2), width: 28, height: 20),
         upperPaint,
       );
       // Top accent
-      final topPaint = Paint()..color = leafColor.withOpacity(0.3);
+      final topPaint = Paint()..color = leafColor.withValues(alpha: 0.3);
       canvas.drawOval(
         Rect.fromCenter(center: Offset(cx + 2, stemTop.dy - 8), width: 16, height: 12),
         topPaint,

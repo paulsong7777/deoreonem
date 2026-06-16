@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../theme.dart';
-import '../design/app_tokens.dart';
-import '../design/app_components.dart';
 
 // KOREAN IME STABILITY RULE:
 // The TextField must NEVER be rebuilt by parent state changes during typing.
@@ -45,7 +43,10 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     if (lines.isEmpty && savedItems.isEmpty) {
       // Nothing entered yet — gentle nudge, no crash
       ScaffoldMessenger.of(context).showSnackBar(
-        CalmSnackBar.show('적어놓은 내용이 없어요.'),
+        const SnackBar(
+          content: Text('적어놓은 내용이 없어요.'),
+          duration: Duration(seconds: 2),
+        ),
       );
       return;
     }
@@ -54,7 +55,10 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     if (session == null) {
       debugPrint('[DumpInput] session is null — cannot save items');
       ScaffoldMessenger.of(context).showSnackBar(
-        CalmSnackBar.show('세션이 없어요. 처음부터 다시 시도해 주세요.'),
+        const SnackBar(
+          content: Text('세션이 없어요. 처음부터 다시 시도해 주세요.'),
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
@@ -80,7 +84,10 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
         // Keep text on failure so user doesn't lose input
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          CalmSnackBar.show('저장에 실패했어요: $e'),
+          SnackBar(
+            content: Text('저장에 실패했어요: $e'),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }
@@ -93,7 +100,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
 
     return Scaffold(
       body: Padding(
-        padding: AppTokens.pagePadding,
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,43 +108,47 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
               onTap: () => context.go('/'),
               child: Row(
                 children: [
-                  Icon(Icons.home_outlined, size: 16, color: AppTokens.textSecondary),
+                  Icon(Icons.home_outlined, size: 16, color: AppTheme.secondaryText),
                   const SizedBox(width: 4),
-                  Text('처음으로', style: AppTokens.label),
+                  Text('처음으로', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Text('오늘 남은 것들', style: AppTokens.titleScreen),
+            const SizedBox(height: 8),
+            Text('오늘 남은 것들',
+                style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
               '머릿속에 남아 있는 걸 줄마다 적어보세요.',
-              style: AppTokens.body,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 4),
             Text(
               '정리되지 않아도 괜찮습니다. 한 줄에 하나씩 내려놓으면 됩니다.',
-              style: AppTokens.bodyMuted,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    color: AppTheme.secondaryText,
+                  ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             // Already saved items (from previous interaction or API)
             if (savedItems.isNotEmpty) ...[
               ...savedItems.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
                       children: [
                         Icon(Icons.check_circle_outline,
-                            size: 14, color: AppTokens.sagePrimary),
+                            size: 14, color: AppTheme.accent),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(item.content,
                               style: TextStyle(
-                                  fontSize: 13, color: AppTokens.textSecondary)),
+                                  fontSize: 13, color: AppTheme.secondaryText)),
                         ),
                       ],
                     ),
                   )),
-              Divider(height: 28, color: AppTokens.borderWarm),
+              const Divider(height: 24),
             ],
             // Isolated TextField — NEVER rebuilt by provider state changes.
             // See _StableTextInput class and KOREAN IME STABILITY RULE above.
@@ -148,27 +159,23 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                 onSubmit: (_) => _navigateToClassify(),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             // Button always enabled — validates on click only.
             // IMPORTANT: Do NOT use ValueListenableBuilder or onChanged with
             // TextEditingController. Listening to the controller causes widget
             // rebuilds during IME composition, which crashes Korean (한글) input
             // on Windows. The button stays enabled; empty-input is handled
             // gracefully in _navigateToClassify.
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _navigateToClassify,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text('분류하기', style: AppTokens.buttonPrimary),
-              ),
+            ElevatedButton(
+              onPressed: _isSaving ? null : _navigateToClassify,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('분류하기'),
             ),
           ],
         ),
@@ -231,8 +238,8 @@ class _StableTextInputState extends State<_StableTextInput> {
         hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
         hintMaxLines: 10,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusInput),
-          borderSide: BorderSide(color: AppTokens.borderWarm),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
         contentPadding: const EdgeInsets.all(16),
       ),

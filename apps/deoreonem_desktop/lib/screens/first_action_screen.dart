@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
-import '../design/app_tokens.dart';
-import '../design/app_components.dart';
 import '../providers/session_provider.dart';
 import '../providers/items_provider.dart';
 import '../providers/api_provider.dart';
@@ -64,7 +62,7 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          CalmSnackBar.show('$e'),
+          SnackBar(content: Text('$e')),
         );
       }
     }
@@ -77,38 +75,39 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
 
     return Scaffold(
       body: Padding(
-        padding: AppTokens.pagePadding,
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('첫 번째 할 일', style: AppTokens.titleScreen),
-            const SizedBox(height: 6),
+            Text('첫 번째 할 일',
+                style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 4),
             GestureDetector(
               onTap: () => context.go('/classify'),
               child: Row(
                 children: [
-                  Icon(Icons.arrow_back_ios, size: 14, color: AppTokens.textSecondary),
+                  Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
                   const SizedBox(width: 4),
-                  Text('돌아가기', style: AppTokens.label),
+                  Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               '내일 가장 먼저 할 일 하나를 고르세요.',
-              style: AppTokens.body,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
             Expanded(
               child: itemsState.when(
                 loading: () =>
-                    Center(child: CircularProgressIndicator(color: AppTokens.sagePrimary)),
-                error: (e, _) => Center(child: Text('오류: $e', style: AppTokens.body)),
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('오류: $e')),
                 data: (_) => eligible.isEmpty
                     ? Center(
                         child: Text(
                           '내일로 분류된 항목이 없습니다.\n건너뛰기를 눌러 계속하세요.',
-                          style: AppTokens.body,
+                          style: Theme.of(context).textTheme.bodyMedium,
                           textAlign: TextAlign.center,
                         ),
                       )
@@ -116,45 +115,33 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
                   itemCount: eligible.length,
                   itemBuilder: (context, index) {
                     final isSelected = _selectedIndex == index;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: GestureDetector(
+                    return Card(
+                      color: isSelected
+                          ? AppTheme.accent.withValues(alpha: 0.1)
+                          : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color:
+                              isSelected ? AppTheme.accent : AppTheme.border,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(eligible[index].content),
+                        leading: Radio<int>(
+                          value: index,
+                          groupValue: _selectedIndex,
+                          onChanged: _isSaving
+                              ? null
+                              : (val) =>
+                                  setState(() => _selectedIndex = val),
+                          activeColor: AppTheme.accent,
+                        ),
                         onTap: _isSaving
                             ? null
                             : () => setState(() => _selectedIndex = index),
-                        child: ProductSurface(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(AppTokens.radiusCard),
-                              border: isSelected
-                                  ? Border.all(color: AppTokens.sagePrimary, width: 2)
-                                  : null,
-                              color: isSelected
-                                  ? AppTokens.sagePrimary.withOpacity(0.05)
-                                  : null,
-                            ),
-                            child: Row(
-                              children: [
-                                Radio<int>(
-                                  value: index,
-                                  groupValue: _selectedIndex,
-                                  onChanged: _isSaving
-                                      ? null
-                                      : (val) =>
-                                          setState(() => _selectedIndex = val),
-                                  activeColor: AppTokens.sagePrimary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(eligible[index].content,
-                                      style: const TextStyle(
-                                          fontSize: 14, color: AppTokens.textPrimary)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ),
                     );
                   },
@@ -165,32 +152,26 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
             Row(
               children: [
                 Expanded(
-                  child: SizedBox(
-                    height: 46,
-                    child: OutlinedButton(
-                      onPressed: _isSaving ? null : () => context.go('/summary'),
-                      child: Text('건너뛰기', style: AppTokens.buttonSecondary),
-                    ),
+                  child: OutlinedButton(
+                    onPressed: _isSaving ? null : () => context.go('/summary'),
+                    child: const Text('건너뛰기'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed:
-                          (_selectedIndex != null && !_isSaving)
-                              ? _setFirstAction
-                              : null,
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text('다음', style: AppTokens.buttonPrimary),
-                    ),
+                  child: ElevatedButton(
+                    onPressed:
+                        (_selectedIndex != null && !_isSaving)
+                            ? _setFirstAction
+                            : null,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('다음'),
                   ),
                 ),
               ],

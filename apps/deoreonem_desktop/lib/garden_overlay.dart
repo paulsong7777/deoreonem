@@ -12,7 +12,6 @@ import 'services/runtime_paths.dart';
 import 'services/diagnostics_log.dart';
 import 'widgets/quiet_garden_patch.dart';
 import 'theme.dart';
-import 'design/app_tokens.dart';
 
 const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
@@ -396,7 +395,7 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                       showGlow: _showNutrientGlow,
                     ),
 
-                  // Close button (top-right, nearly invisible)
+                  // Close button (top-right, subtle)
                   Positioned(
                     top: 4,
                     right: 4,
@@ -408,24 +407,24 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
                           width: 14,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.close, size: 8,
-                              color: AppTokens.textSecondary),
+                          child: const Icon(Icons.close, size: 8,
+                              color: AppTheme.secondaryText),
                         ),
                       ),
                     ),
                   ),
 
-                  // Context menu button (top-left, nearly invisible)
+                  // Context menu button (top-left, subtle)
                   Positioned(
                     top: 4,
                     left: 4,
                     child: PopupMenuButton<String>(
                       tooltip: '',
                       icon: Icon(Icons.more_horiz, size: 10,
-                          color: AppTokens.textSecondary.withOpacity(0.15)),
+                          color: AppTheme.secondaryText.withValues(alpha: 0.15)),
                       padding: EdgeInsets.zero,
                       onSelected: _handleMenuSelection,
                       itemBuilder: (context) => [

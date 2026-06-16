@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
-import '../design/app_tokens.dart';
-import '../design/app_components.dart';
 import '../providers/session_provider.dart';
 import '../providers/summary_provider.dart';
 import '../providers/api_provider.dart';
@@ -63,7 +61,7 @@ class _EntrustedSummaryScreenState
         if (mounted) {
           setState(() => _isCompleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            CalmSnackBar.show('세션 저장에 실패했어요: $e'),
+            SnackBar(content: Text('세션 저장에 실패했어요: $e'), duration: const Duration(seconds: 4)),
           );
         }
         return; // DO NOT navigate to /complete
@@ -84,7 +82,7 @@ class _EntrustedSummaryScreenState
       if (mounted) {
         setState(() => _isCompleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          CalmSnackBar.show('$e'),
+          SnackBar(content: Text('$e')),
         );
       }
     }
@@ -96,66 +94,66 @@ class _EntrustedSummaryScreenState
 
     return Scaffold(
       body: summaryState.when(
-        loading: () => Center(child: CircularProgressIndicator(color: AppTokens.sagePrimary)),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Padding(
-            padding: AppTokens.pagePadding,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('요약을 불러오는데 실패했어요.', style: AppTokens.body),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: 200,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final session = ref.read(sessionProvider).valueOrNull;
-                      if (session != null) {
-                        ref
-                            .read(summaryProvider.notifier)
-                            .loadSummary(session.sessionId);
-                      }
-                    },
-                    child: const Text('다시 시도'),
-                  ),
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('요약을 불러오는데 실패했어요.'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final session = ref.read(sessionProvider).valueOrNull;
+                  if (session != null) {
+                    ref
+                        .read(summaryProvider.notifier)
+                        .loadSummary(session.sessionId);
+                  }
+                },
+                child: const Text('다시 시도'),
+              ),
+            ],
           ),
         ),
         data: (summary) {
           if (summary == null) {
-            return Center(child: CircularProgressIndicator(color: AppTokens.sagePrimary));
+            return const Center(child: CircularProgressIndicator());
           }
 
           return Padding(
-            padding: AppTokens.pagePadding,
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('오늘의 덜어냄', style: AppTokens.titleScreen),
-                const SizedBox(height: 6),
+                Text('오늘의 덜어냄',
+                    style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => context.go('/first-action'),
                   child: Row(
                     children: [
-                      Icon(Icons.arrow_back_ios, size: 14, color: AppTokens.textSecondary),
+                      Icon(Icons.arrow_back_ios, size: 14, color: AppTheme.secondaryText),
                       const SizedBox(width: 4),
-                      Text('돌아가기', style: AppTokens.label),
+                      Text('돌아가기', style: TextStyle(fontSize: 12, color: AppTheme.secondaryText)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                // First Action highlight
+                const SizedBox(height: 8),
+                // First Action highlight — lighter design
                 if (summary.firstActionItem != null) ...[
-                  ProductSurface(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: AppTheme.accent.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.accent.withValues(alpha: 0.04),
+                    ),
                     child: Row(
                       children: [
-                        Icon(Icons.star_rounded,
-                            color: AppTokens.sagePrimary, size: 18),
+                        const Icon(Icons.star_rounded,
+                            color: AppTheme.accent, size: 18),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -165,7 +163,7 @@ class _EntrustedSummaryScreenState
                                 '내일 가장 먼저 볼 것',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: AppTokens.textSecondary,
+                                  color: AppTheme.secondaryText,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -173,7 +171,7 @@ class _EntrustedSummaryScreenState
                               Text(
                                 summary.firstActionItem!.content,
                                 style: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.w500, color: AppTokens.textPrimary),
+                                    fontSize: 14, fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
@@ -185,19 +183,19 @@ class _EntrustedSummaryScreenState
                 ],
                 Text(
                   '총 ${summary.totalItems}개를 맡겼습니다.',
-                  style: AppTokens.body,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 // Worry soft-fade notice
                 if ((summary.itemsByCategory['WORRY_ONLY'] ?? []).isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     '걱정으로 맡겨둔 것 ${summary.itemsByCategory['WORRY_ONLY']!.length}개',
-                    style: AppTokens.label,
+                    style: TextStyle(fontSize: 12, color: AppTheme.secondaryText),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '이 걱정은 3일 뒤 조용히 사라집니다. 지금 해결하지 않아도 괜찮아요.',
-                    style: AppTokens.bodyMuted,
+                    style: TextStyle(fontSize: 11, color: AppTheme.secondaryText, height: 1.4),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -213,54 +211,43 @@ class _EntrustedSummaryScreenState
                                       const EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
                                     categoryLabels[entry.key] ?? entry.key,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: AppTokens.textSecondary,
+                                      color: AppTheme.secondaryText,
                                       fontSize: 13,
                                     ),
                                   ),
                                 ),
-                                ...entry.value.map((item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: ProductSurface(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    child: Row(
-                                      children: [
-                                        if (item.isFirstAction)
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 8),
-                                            child: Icon(Icons.star,
+                                ...entry.value.map((item) => Card(
+                                      margin: const EdgeInsets.only(bottom: 4),
+                                      child: ListTile(
+                                        title: Text(item.content,
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        dense: true,
+                                        leading: item.isFirstAction
+                                            ? const Icon(Icons.star,
                                                 size: 16,
-                                                color: AppTokens.sagePrimary),
-                                          ),
-                                        Expanded(
-                                          child: Text(item.content,
-                                              style: const TextStyle(fontSize: 14, color: AppTokens.textPrimary)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )),
+                                                color: AppTheme.accent)
+                                            : null,
+                                      ),
+                                    )),
                               ],
                             ))
                         .toList(),
                   ),
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _isCompleting ? null : _completeSession,
-                    child: _isCompleting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text('완료하기', style: AppTokens.buttonPrimary),
-                  ),
+                ElevatedButton(
+                  onPressed: _isCompleting ? null : _completeSession,
+                  child: _isCompleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('완료하기'),
                 ),
               ],
             ),
