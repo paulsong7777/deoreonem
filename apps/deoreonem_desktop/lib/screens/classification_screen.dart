@@ -300,44 +300,40 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
                                 currentItem.category == cat['key'];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: GestureDetector(
-                                onTap: (allClassified && !isReviewing)
+                              child: OutlinedButton(
+                                onPressed: (allClassified && !isReviewing)
                                     ? null
                                     : () => _classify(cat['key']!, items),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 80),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: isDropCategory
+                                      ? AppTheme.drop
+                                      : AppTheme.primaryText,
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isCurrentCategory
-                                          ? AppTheme.accent
-                                          : AppTheme.border,
-                                      width: isCurrentCategory ? 2 : 1,
-                                    ),
-                                    color: isCurrentCategory
-                                        ? AppTheme.accent.withOpacity(0.06)
-                                        : Colors.white,
+                                  alignment: Alignment.centerLeft,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Text(cat['label']!,
+                                  side: isCurrentCategory
+                                      ? BorderSide(color: AppTheme.accent, width: 2)
+                                      : null,
+                                  backgroundColor: isCurrentCategory
+                                      ? AppTheme.accent.withValues(alpha: 0.06)
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(cat['label']!,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(cat['desc']!,
                                           style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
-                                              color: isDropCategory
-                                                  ? AppTheme.drop
-                                                  : AppTheme.primaryText)),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(cat['desc']!,
-                                            style: TextStyle(
-                                                color: AppTheme.secondaryText,
-                                                fontSize: 13)),
-                                      ),
-                                    ],
-                                  ),
+                                              color: AppTheme.secondaryText,
+                                              fontSize: 13)),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
