@@ -106,6 +106,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
   @override
   Widget build(BuildContext context) {
     final pending = ref.watch(pendingThoughtsProvider);
+    final submittedItems = ref.watch(itemsProvider).valueOrNull ?? [];
 
     return Scaffold(
       body: Padding(
@@ -172,8 +173,24 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             if (pending.isNotEmpty) const SizedBox(height: 8),
             Expanded(
               child: pending.isEmpty
-                  ? Center(child: Text('아직 적어둔 생각이 없습니다.',
-                      style: TextStyle(fontSize: 13, color: AppTheme.secondaryText.withOpacity(0.6))))
+                  ? (submittedItems.isNotEmpty
+                      ? ListView(
+                          children: [
+                            Text('저장 완료 (${submittedItems.length}개)',
+                                style: TextStyle(fontSize: 12, color: AppTheme.secondaryText, fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 8),
+                            ...submittedItems.map((item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(children: [
+                                Icon(Icons.check_circle_outline, size: 14, color: AppTheme.accent),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(item.content, style: TextStyle(fontSize: 13, color: AppTheme.secondaryText))),
+                              ]),
+                            )),
+                          ],
+                        )
+                      : Center(child: Text('아직 적어둔 생각이 없습니다.',
+                          style: TextStyle(fontSize: 13, color: AppTheme.secondaryText.withOpacity(0.6)))))
                   : ListView.builder(
                       itemCount: pending.length,
                       itemBuilder: (context, index) => Padding(
@@ -202,7 +219,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
             SizedBox(
               width: double.infinity, height: 48,
               child: ElevatedButton(
-                onPressed: (_isSaving || pending.isEmpty) ? null : _navigateToClassify,
+                onPressed: (_isSaving || (pending.isEmpty && submittedItems.isEmpty)) ? null : _navigateToClassify,
                 child: _isSaving
                     ? const SizedBox(width: 20, height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

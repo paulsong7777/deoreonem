@@ -284,10 +284,10 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
     _currentNutrients = widget.totalNutrients;
     windowManager.addListener(this);
 
-    // Poll nutrient state every 1 second for responsive feedback.
+    // Poll nutrient state every 2 seconds to reduce file I/O pressure.
     // Uses file-based sync first (reliable on Windows), falls back to SharedPreferences.
     // Also update heartbeat for instance lock every cycle.
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       int fresh;
       // Try file-based sync first (written by main app after worry let-go)
       final fromFile = LocalStorageService.readGardenStateFromFile();
@@ -315,13 +315,17 @@ class _GardenOverlayHomeState extends State<_GardenOverlayHome>
   }
 
   /// Triggers a brief warm glow effect when a new nutrient is absorbed.
+  /// Forces false→true transition so didUpdateWidget always detects the change.
   void _triggerNutrientGlow() {
     if (!mounted) return;
     _glowTimer?.cancel();
-    setState(() => _showNutrientGlow = true);
-    _glowTimer = Timer(const Duration(milliseconds: 1500), () {
+    setState(() => _showNutrientGlow = false);
+    Future.microtask(() {
       if (mounted) {
-        setState(() => _showNutrientGlow = false);
+        setState(() => _showNutrientGlow = true);
+        _glowTimer = Timer(const Duration(milliseconds: 1500), () {
+          if (mounted) setState(() => _showNutrientGlow = false);
+        });
       }
     });
   }
