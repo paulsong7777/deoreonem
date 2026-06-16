@@ -184,6 +184,9 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: _addThought,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 48), // Override theme's infinite width
+                    ),
                     child: const Text('추가'),
                   ),
                 ),
