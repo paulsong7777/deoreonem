@@ -12,6 +12,7 @@ import 'garden_overlay.dart';
 import 'services/runtime_paths.dart';
 import 'services/diagnostics_log.dart';
 import 'build_info.dart';
+import 'screens/ime_test_screen.dart';
 
 const _keyMainAppRunning = 'main_app_running';
 const _keyMainAppHeartbeat = 'main_app_heartbeat';
@@ -144,6 +145,13 @@ Future<bool> isMainAppRunning(SharedPreferences prefs) async {
 }
 
 void main(List<String> args) async {
+  // IME probe mode — launches directly into the IME test harness
+  if (args.contains('--ime-probe')) {
+    WidgetsFlutterBinding.ensureInitialized();
+    runApp(const MaterialApp(home: ImeTestScreen()));
+    return;
+  }
+
   // Garden overlay mode
   if (args.contains('--garden') || args.contains('--overlay')) {
     await runGardenOverlay();

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:deoreonem_desktop/screens/dump_input_screen.dart';
 import 'package:deoreonem_desktop/providers/session_provider.dart';
 import 'package:deoreonem_desktop/providers/items_provider.dart';
+import 'package:deoreonem_desktop/providers/pending_thoughts_provider.dart';
 import 'package:deoreonem_desktop/models/session_model.dart';
 import 'package:deoreonem_desktop/models/item_model.dart';
 import 'package:mocktail/mocktail.dart';
@@ -34,6 +35,7 @@ void main() {
           return notifier;
         }),
         itemsProvider.overrideWith((ref) => ItemsNotifier(mockApi)),
+        pendingThoughtsProvider.overrideWith((ref) => PendingThoughtsNotifier()),
       ],
       child: const MaterialApp(home: DumpInputScreen()),
     );
@@ -45,6 +47,13 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('추가'), findsOneWidget);
     expect(find.text('분류하기'), findsOneWidget);
+  });
+
+  testWidgets('분류하기 is disabled when no pending thoughts', (tester) async {
+    await tester.pumpWidget(buildWidget());
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, '분류하기'));
+    expect(button.onPressed, isNull);
   });
 
   testWidgets('Adding thought via button shows in pending list', (tester) async {
@@ -79,7 +88,10 @@ void main() {
     await tester.pumpWidget(buildWidget());
     await tester.tap(find.text('분류하기'));
     await tester.pump();
-    expect(find.text('적어놓은 내용이 없어요.'), findsOneWidget);
+    // Button is disabled so snackbar won't show — verify button is disabled
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, '분류하기'));
+    expect(button.onPressed, isNull);
   });
 
   testWidgets('Removing a thought from pending list works', (tester) async {
