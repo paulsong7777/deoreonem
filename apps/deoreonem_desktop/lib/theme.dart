@@ -10,7 +10,7 @@ class AppTheme {
   static const Color drop = Color(0xFFC4A882);
 
   static ThemeData get themeData => ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFFCF9F5),
+        scaffoldBackgroundColor: background,
         colorScheme: ColorScheme.light(
           primary: accent,
           surface: surface,
@@ -21,7 +21,7 @@ class AppTheme {
           elevation: 0.3,
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         textTheme: const TextTheme(
