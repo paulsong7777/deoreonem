@@ -34,6 +34,10 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
     super.initState();
     _controller = TextEditingController();
     _focusNode = FocusNode();
+    // Request focus after first frame — avoids autofocus race with IME initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
@@ -152,8 +156,13 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
                 maxLines: null,
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
-                autofocus: true,
-                // Do NOT toggle enabled during typing. Only disable when navigating away.
+                // NO autofocus — focus requested via postFrameCallback to avoid
+                // race condition with Windows IME initialization.
+                // enableIMEPersonalizedLearning disabled to prevent Windows IME
+                // from interfering with composition state.
+                enableIMEPersonalizedLearning: false,
+                enableSuggestions: false,
+                autocorrect: false,
                 decoration: InputDecoration(
                   hintText: '내일 회의 준비\n보낼 이메일 정리\n프로젝트 방향 고민\n...',
                   hintMaxLines: 10,

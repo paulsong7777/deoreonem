@@ -6,6 +6,7 @@ import 'screens/first_action_screen.dart';
 import 'screens/entrusted_summary_screen.dart';
 import 'screens/completion_screen.dart';
 import 'screens/review_screen.dart';
+import 'screens/ime_test_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -28,5 +29,9 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/review',
         builder: (context, state) => const ReviewScreen()),
+    // Debug-only: Korean IME test harness
+    GoRoute(
+        path: '/ime-test',
+        builder: (context, state) => const ImeTestScreen()),
   ],
 );
