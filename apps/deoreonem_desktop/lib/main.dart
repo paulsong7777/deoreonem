@@ -30,7 +30,7 @@ void _writeMainAppHeartbeat() {
   try {
     final file = _getMainAppHeartbeatFile();
     if (file == null) return;
-    file.writeAsStringSync(
+    file.writeAsString(  // async, non-blocking
       jsonEncode({'running': true, 'heartbeat': DateTime.now().toIso8601String()}),
     );
   } catch (_) {}

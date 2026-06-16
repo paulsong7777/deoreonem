@@ -50,6 +50,27 @@ class ItemsNotifier extends StateNotifier<AsyncValue<List<ItemModel>>> {
     }
   }
 
+  /// Adds multiple items concurrently. Preserves order in state.
+  Future<void> addItems(String sessionId, List<String> contents) async {
+    // Launch all requests concurrently
+    final futures = contents.asMap().entries.map((entry) async {
+      final item = await _api.addItem(sessionId, entry.value);
+      return MapEntry(entry.key, item);
+    }).toList();
+
+    final results = await Future.wait(futures);
+    // Sort by original index to preserve order
+    results.sort((a, b) => a.key.compareTo(b.key));
+
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data([...current, ...results.map((e) => e.value)]);
+  }
+
+  /// Sets state directly for optimistic UI updates.
+  void setOptimistic(List<ItemModel> items) {
+    state = AsyncValue.data(items);
+  }
+
   List<ItemModel> get unclassifiedItems =>
       (state.valueOrNull ?? []).where((i) => i.category == null).toList();
 

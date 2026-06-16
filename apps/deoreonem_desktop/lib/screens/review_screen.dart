@@ -160,23 +160,28 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Future<void> _closeItem(ItemModel item) async {
-    if (_removingIds.contains(item.itemId)) return;
-    setState(() => _removingIds.add(item.itemId));
+    // Guard: if already removed from _items, ignore
+    if (!_items.any((i) => i.itemId == item.itemId)) return;
+
+    // Optimistic: remove from UI immediately
+    setState(() {
+      _items.removeWhere((i) => i.itemId == item.itemId);
+      final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
+      ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
+      if (visible.isEmpty) _state = _ReviewState.empty;
+    });
+
+    // API call in background
     try {
       final api = ref.read(apiServiceProvider);
       await api.updateCategory(item.sessionId, item.itemId, 'DROP');
+    } catch (e) {
+      // Restore item on failure
       if (mounted) {
         setState(() {
-          _items.removeWhere((i) => i.itemId == item.itemId);
-          _removingIds.remove(item.itemId);
-          final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
-          ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
-          if (visible.isEmpty) _state = _ReviewState.empty;
+          _items.add(item);
+          _items.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
         });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _removingIds.remove(item.itemId));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('처리할 수 없어요. 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),
@@ -193,39 +198,47 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Future<void> _letGoWorry(ItemModel item) async {
-    if (_removingIds.contains(item.itemId)) return;
-    setState(() => _removingIds.add(item.itemId));
+    // Guard: if already removed from _items, ignore
+    if (!_items.any((i) => i.itemId == item.itemId)) return;
+
+    // Optimistic: remove from UI and add nutrient immediately
+    setState(() {
+      _items.removeWhere((i) => i.itemId == item.itemId);
+      _hasConvertedWorryToNutrient = true;
+      final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
+      ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
+      if (visible.isEmpty) _state = _ReviewState.empty;
+    });
+
+    // Record nutrient immediately (local, fast)
+    await ref.read(localStorageProvider).addWorryNutrient(item.itemId);
+    logDiagnostic('TREE_NUTRIENT_REQUEST itemId=${item.itemId} newTotal=${ref.read(localStorageProvider).totalWorryNutrients}');
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('걱정 하나가 조용한 나무의 양분이 되었어요.', style: TextStyle(fontSize: 13)),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF5A5550),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+          elevation: 2,
+        ),
+      );
+    }
+
+    // API call in background
     try {
       final api = ref.read(apiServiceProvider);
       await api.updateCategory(item.sessionId, item.itemId, 'DROP');
-      if (mounted) {
-        // Record nutrient (deduplicated — won't double-count)
-        await ref.read(localStorageProvider).addWorryNutrient(item.itemId);
-        logDiagnostic('TREE_NUTRIENT_REQUEST itemId=${item.itemId} newTotal=${ref.read(localStorageProvider).totalWorryNutrients}');
-
-        setState(() {
-          _items.removeWhere((i) => i.itemId == item.itemId);
-          _removingIds.remove(item.itemId);
-          _hasConvertedWorryToNutrient = true;
-          final visible = _items.where((i) => i.category != null && _visibleCategories.contains(i.category)).toList();
-          ref.read(localStorageProvider).setReviewableEntrustedCount(visible.length);
-          if (visible.isEmpty) _state = _ReviewState.empty;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('걱정 하나가 조용한 나무의 양분이 되었어요.', style: TextStyle(fontSize: 13)),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(0xFF5A5550),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 2),
-            elevation: 2,
-          ),
-        );
-      }
     } catch (e) {
+      // Restore item on failure
       if (mounted) {
-        setState(() => _removingIds.remove(item.itemId));
+        setState(() {
+          _items.add(item);
+          _items.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('처리할 수 없어요. 다시 시도해 주세요.', style: TextStyle(fontSize: 13)),

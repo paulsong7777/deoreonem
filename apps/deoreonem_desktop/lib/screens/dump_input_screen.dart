@@ -101,9 +101,7 @@ class _DumpInputScreenState extends ConsumerState<DumpInputScreen> {
 
     setState(() => _isSaving = true);
     try {
-      for (final text in pending) {
-        await ref.read(itemsProvider.notifier).addItem(session.sessionId, text);
-      }
+      await ref.read(itemsProvider.notifier).addItems(session.sessionId, pending);
       if (mounted) {
         ref.read(pendingThoughtsProvider.notifier).clear();
         setState(() => _isSaving = false);

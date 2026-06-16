@@ -18,6 +18,7 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
   bool _isClassifying = false;
   final List<String> _classifiedItemIds = [];
   String? _reviewingItemId;
+  final List<Future<void>> _pendingUpdates = [];
 
   static const List<Map<String, String>> categoryButtons = [
     {'key': 'NOW', 'label': '지금', 'desc': '오늘 안에 반드시'},
@@ -98,30 +99,39 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
     if (unclassified.isEmpty) return;
 
     final item = unclassified.first;
-    setState(() => _isClassifying = true);
 
-    try {
-      await ref
-          .read(itemsProvider.notifier)
-          .updateCategory(session.sessionId, item.itemId, category);
+    // Optimistic local update — show next item immediately
+    final current = ref.read(itemsProvider).valueOrNull ?? [];
+    final optimisticList = current.map((i) =>
+      i.itemId == item.itemId ? i.copyWith(category: category) : i
+    ).toList();
+    ref.read(itemsProvider.notifier).setOptimistic(optimisticList);
 
+    setState(() {
+      _classifiedItemIds.add(item.itemId);
+    });
+
+    // Fire API in background
+    final future = ref.read(itemsProvider.notifier)
+        .updateCategory(session.sessionId, item.itemId, category)
+        .catchError((e) {
+      // Revert on failure — show error
       if (mounted) {
-        setState(() {
-          _isClassifying = false;
-          _classifiedItemIds.add(item.itemId);
-        });
-
-        // Auto-navigate if this was the last item
-        final allItems = ref.read(itemsProvider).valueOrNull ?? [];
-        final remaining = allItems.where((i) => i.category == null).toList();
-        if (remaining.isEmpty && allItems.isNotEmpty) {
-          context.go('/first-action');
-        }
+        _showClassifyError(e);
       }
-    } catch (e) {
+    });
+    _pendingUpdates.add(future);
+
+    // Check if all classified — if yes, wait for pending then navigate
+    final allItems = ref.read(itemsProvider).valueOrNull ?? [];
+    final remaining = allItems.where((i) => i.category == null).toList();
+    if (remaining.isEmpty && allItems.isNotEmpty) {
+      setState(() => _isClassifying = true);
+      await Future.wait(_pendingUpdates);
+      _pendingUpdates.clear();
       if (mounted) {
         setState(() => _isClassifying = false);
-        _showClassifyError(e);
+        context.go('/first-action');
       }
     }
   }
@@ -259,7 +269,16 @@ class _ClassificationScreenState extends ConsumerState<ClassificationScreen> {
             // Category buttons
             Expanded(
               child: _isClassifying
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 12),
+                          Text('분류 저장 중…', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    )
                   : ListView(
                       children: _categoryGroups.expand((group) {
                         final drawer = group['drawer'] as String;

@@ -202,7 +202,11 @@ class LocalStorageService {
       final file = _getGardenStateFile();
       if (file == null) return;
       file.writeAsString(
-        jsonEncode({'totalWorryNutrients': totalNutrients, 'updatedAt': DateTime.now().toIso8601String()}),
+        jsonEncode({
+          'totalWorryNutrients': totalNutrients,
+          'lastNutrientEventId': totalNutrients, // Use total as monotonic event ID
+          'updatedAt': DateTime.now().toIso8601String(),
+        }),
       );
     } catch (_) {
       // Non-critical: overlay falls back to SharedPreferences
@@ -225,6 +229,20 @@ class LocalStorageService {
       final content = file.readAsStringSync();
       final map = jsonDecode(content) as Map<String, dynamic>;
       return map['totalWorryNutrients'] as int?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Read the last nutrient event ID from the garden state file.
+  /// Returns null if file doesn't exist or field is missing.
+  static int? readGardenEventIdFromFile() {
+    try {
+      final file = _getGardenStateFile();
+      if (file == null || !file.existsSync()) return null;
+      final content = file.readAsStringSync();
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      return map['lastNutrientEventId'] as int?;
     } catch (_) {
       return null;
     }
