@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'design/app_tokens.dart';
 
 class AppTheme {
-  static const Color background = AppTokens.bgIvory;
-  static const Color surface = AppTokens.surfaceWarm;
-  static const Color border = AppTokens.borderWarm;
-  static const Color primaryText = AppTokens.textPrimary;
-  static const Color secondaryText = AppTokens.textSecondary;
-  static const Color accent = AppTokens.sagePrimary;
+  static const Color background = Color(0xFFFCF9F5);
+  static const Color surface = Color(0xFFFFFEFC);
+  static const Color border = Color(0xFFEDE7DD);
+  static const Color primaryText = Color(0xFF3A3530);
+  static const Color secondaryText = Color(0xFF7A7570);
+  static const Color accent = Color(0xFF5B8C6B);
   static const Color drop = Color(0xFFC4A882);
 
   static ThemeData get themeData => ThemeData(
         scaffoldBackgroundColor: AppTokens.bgIvory,
         colorScheme: ColorScheme.light(
-          primary: AppTokens.sagePrimary,
-          surface: AppTokens.surfaceWarm,
+          primary: accent,
+          surface: surface,
           onPrimary: Colors.white,
-          onSurface: AppTokens.textPrimary,
+          onSurface: primaryText,
         ),
         cardTheme: CardThemeData(
           elevation: 0,
@@ -29,21 +29,21 @@ class AppTheme {
           headlineLarge: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w300,
-            color: AppTokens.textPrimary,
+            color: primaryText,
           ),
           headlineMedium: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w400,
-            color: AppTokens.textPrimary,
+            color: primaryText,
           ),
           bodyLarge: TextStyle(
             fontSize: 16,
-            color: AppTokens.textPrimary,
+            color: primaryText,
             height: 1.5,
           ),
           bodyMedium: TextStyle(
             fontSize: 14,
-            color: AppTokens.textSecondary,
+            color: secondaryText,
             height: 1.5,
           ),
         ),
@@ -68,7 +68,7 @@ class AppTheme {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: AppTokens.textSecondary,
+            foregroundColor: secondaryText,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(

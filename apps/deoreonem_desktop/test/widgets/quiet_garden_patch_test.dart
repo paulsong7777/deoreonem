@@ -4,7 +4,7 @@ import 'package:deoreonem_desktop/widgets/quiet_garden_patch.dart';
 
 void main() {
   group('QuietGardenPatch', () {
-    for (final n in [0, 1, 4, 7, 11, 16, 22, 30, 40]) {
+    for (final n in [0, 1, 3, 7, 15]) {
       testWidgets('builds for $n nutrients', (tester) async {
         await tester.pumpWidget(
           MaterialApp(home: QuietGardenPatch(totalNutrients: n)),
@@ -20,6 +20,7 @@ void main() {
         const MaterialApp(home: QuietGardenPatch(totalNutrients: 5)),
       );
       await tester.pump();
+      // Should not find game terms
       expect(find.textContaining('레벨'), findsNothing);
       expect(find.textContaining('보상'), findsNothing);
       expect(find.textContaining('퀘스트'), findsNothing);
@@ -30,16 +31,9 @@ void main() {
         const MaterialApp(home: QuietGardenPatch(totalNutrients: 10)),
       );
       await tester.pump(const Duration(seconds: 1));
+      // Still renders fine after animation progresses
       expect(find.byType(QuietGardenPatch), findsOneWidget);
       expect(find.byType(CustomPaint), findsWidgets);
-    });
-
-    testWidgets('hover interaction via MouseRegion', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: QuietGardenPatch(totalNutrients: 20)),
-      );
-      await tester.pump();
-      expect(find.byType(MouseRegion), findsWidgets);
     });
   });
 }

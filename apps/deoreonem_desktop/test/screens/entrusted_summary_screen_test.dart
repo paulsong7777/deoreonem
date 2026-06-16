@@ -88,7 +88,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('잘 맡겨두었어요'), findsOneWidget);
+    expect(find.text('오늘의 덜어냄'), findsOneWidget);
     expect(find.textContaining('맡겼습니다'), findsOneWidget);
     expect(find.text('완료하기'), findsOneWidget);
   });

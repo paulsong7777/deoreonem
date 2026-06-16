@@ -43,8 +43,8 @@ void main() {
       (tester) async {
     await tester.pumpWidget(buildWidget());
 
-    expect(find.text('마음속에 담긴 것을 적어주세요.'), findsOneWidget);
-    expect(find.textContaining('한 줄에 하나씩'), findsOneWidget);
+    expect(find.text('오늘 남은 것들'), findsOneWidget);
+    expect(find.textContaining('줄마다 적어보세요'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     // Button is always enabled (validates on click, not on text change)
     // This avoids Korean IME crash from controller listeners
@@ -113,7 +113,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Should still be on DumpInputScreen (not navigated away)
-    expect(find.text('마음속에 담긴 것을 적어주세요.'), findsOneWidget);
+    expect(find.text('오늘 남은 것들'), findsOneWidget);
     // Error message should be shown
     expect(find.textContaining('실패'), findsWidgets);
   });

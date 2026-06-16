@@ -2,71 +2,58 @@
 
 ## Summary
 
-Full product UI rebuilt from approved source-of-truth reference boards A and B.
+Full visual-layer rebuild of DeoReoNem Desktop (Flutter/Windows). All screens updated to use a unified design system with warm minimal aesthetic. Zero behavioral logic changes.
 
-**Build Status**: ✅ All tests passing (134/134), release build successful.
+## Design System Created (`lib/design/`)
 
----
+### `app_tokens.dart`
+- Color palette: bgIvory, surfaceWarm, surfaceElevated, sagePrimary, textPrimary/Secondary/Muted, borderWarm, glowAmber, errorMuted
+- Spacing: pagePadding (32h/24v), sectionGap (28), cardPadding (20), buttonGap (10)
+- Radii: radiusLarge (24), radiusCard (16), radiusButton (12), radiusInput (12)
+- Typography: titleHero (44/w200), titleScreen (22/w400), body (14), bodyMuted (13), label (12), caption (11), buttonPrimary/Secondary
 
-## Changes Made
+### `app_components.dart`
+- `ProductSurface`: Reusable card surface with warm background, subtle border, configurable padding
+- `CalmSnackBar`: Styled floating snackbar with warm dark background
+- `EmptyStateView`: Shared empty state with poetic copy, action buttons
 
-### Design Tokens (`lib/design/app_tokens.dart`)
-- Updated all color values to match Reference A board exactly
-- Added new tokens: sageLight, ivory, warmWhite, sand, charcoal, softBlue, lavender
-- Updated typography: titleBanner (48pt), heading (24pt), body (16pt), caption (13pt)
-- Updated spacing: radiusLarge→20, radiusCard→14, sectionGap→24
+## Theme Rebuild (`lib/theme.dart`)
+- scaffoldBackground → bgIvory
+- ElevatedButton: sagePrimary, elevation 0, radius 12, height 48
+- OutlinedButton: borderWarm, radius 12
+- TextButton: textSecondary foreground
+- Card: surfaceWarm, radius 16, elevation 0
+- InputDecoration: radius 12, borderWarm, sagePrimary focus
 
-### Plant Stage System (`lib/services/plant_stage_helper.dart`)
-- Expanded from 5 stages to 9 stages per Reference B
-- New thresholds: 0/1/4/7/11/16/22/30/40
-- All stage messages updated to new Korean copy
+## Screens Rebuilt
 
-### Quiet Tree Overlay (`lib/widgets/quiet_garden_patch.dart`)
-- Added MouseRegion hover interaction (scale 1.02 + translate -2px)
-- Added wind animation controller (8s cycle, ±3° + ±2px lateral)
-- Combined idle sway + wind + hover animations
-- CustomPaint expanded for all 9 stages with progressive canopy/trunk detail
-- Branches drawn for stages 5+, extra branches for stages 7+
+| Screen | Key Visual Changes |
+|--------|-------------------|
+| StartScreen | maxWidth 520, hero 44px/w200, ProductSurface tree preview, 52px primary button, consistent spacing |
+| DumpInputScreen | pagePadding tokens, titleScreen style, CalmSnackBar errors, design-system button |
+| ClassificationScreen | ProductSurface item card, grouped category buttons with token radii/colors, sage progress indicator |
+| FirstActionScreen | ProductSurface radio cards, token typography, consistent button sizing |
+| EntrustedSummaryScreen | ProductSurface for first-action highlight and item cards, token typography throughout |
+| CompletionScreen | Token-based typography, clean textSecondary close button |
+| ReviewScreen | Sage underline tabs, ProductSurface item cards, EmptyStateView component, CalmSnackBar for all errors |
+| QuietGardenPatch | Token-based colors (glowAmber, textSecondary), radius 28 container |
+| Garden Overlay | Token-based controls (close 14x14/alpha 0.03, menu 10/opacity 0.15) |
 
-### Garden Overlay (`lib/garden_overlay.dart`)
-- Window size updated to 250×280
+## Preserved (Untouched)
 
-### Screen Headings (all screens)
-- StartScreen: "덜어냄" banner (48pt), tree preview without card
-- DumpInputScreen: "마음속에 담긴 것을 적어주세요."
-- ClassificationScreen: "이것은 어떤 것에 가까운가요?"
-- FirstActionScreen: "이 일에 대해 지금 할 수 있는 행동은?"
-- EntrustedSummaryScreen: "잘 맡겨두었어요"
-- ReviewScreen: "잠시 맡겨둔 서랍"
+- `_StableTextInput` class (Korean IME stability)
+- `completed_sessions.json` logic
+- `local_storage_service.dart`
+- Review source-of-truth logic
+- Session/classify/complete logic
+- API services and backend calls
+- `runtime_paths`, `diagnostics_log`, lock mechanics
+- All routes and navigation paths
+- All behavioral callbacks
 
-### Theme (`lib/theme.dart`)
-- scaffoldBackgroundColor: bgIvory
-- All theme colors reference AppTokens directly
-- ElevatedButton: sagePrimary, elevation 0, r12
-- OutlinedButton: borderWarm, r12
-- Card: surfaceWarm, r14, no elevation
+## Validation
 
-### Tests Updated
-- `plant_stage_helper_test.dart`: Full 9-stage coverage
-- `quiet_garden_patch_test.dart`: Updated nutrient values, MouseRegion test
-- `start_screen_test.dart`: Updated text assertions
-- `dump_input_screen_test.dart`: Updated heading assertions
-- `entrusted_summary_screen_test.dart`: Updated title assertion
-
----
-
-## Validation Results
-
-- `flutter test`: 134 tests passed, 0 failed
-- `flutter build windows --release`: ✅ Success
-- Audit (old terms): No matches for 작은 자리 / 조용한 정원 / 스며들 / 덜어냄 열기
-
----
-
-## Protected Areas (Not Modified)
-
-- ✅ _StableTextInput / Korean IME — untouched
-- ✅ completed_sessions.json / local_storage_service.dart — untouched
-- ✅ Review source-of-truth logic — untouched
-- ✅ Session/classify/complete logic — untouched
-- ✅ API / backend / runtime_paths / diagnostics_log / locks — untouched
+- **Tests**: 117/117 passed
+- **Audit**: Only one occurrence found in code comments (acceptable)
+- **Build**: Windows release build successful
+- **Build artifact**: `build/windows/x64/runner/Release/deoreonem_desktop.exe`

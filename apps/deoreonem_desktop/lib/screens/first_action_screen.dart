@@ -81,7 +81,7 @@ class _FirstActionScreenState extends ConsumerState<FirstActionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('이 일에 대해 지금 할 수 있는 행동은?', style: AppTokens.heading),
+            Text('첫 번째 할 일', style: AppTokens.titleScreen),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: () => context.go('/classify'),

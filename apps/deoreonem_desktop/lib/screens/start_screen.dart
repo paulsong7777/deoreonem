@@ -12,7 +12,6 @@ import '../theme.dart';
 import '../design/app_tokens.dart';
 import '../design/app_components.dart';
 import '../build_info.dart';
-import '../services/plant_stage_helper.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -65,25 +64,37 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 80),
-                  // A. Hero title — "덜어냄" large
+                  // A. Hero text
                   Text(
                     '덜어냄',
                     textAlign: TextAlign.center,
-                    style: AppTokens.titleBanner,
+                    style: AppTokens.titleHero.copyWith(fontSize: 44),
                   ),
                   const SizedBox(height: 24),
-                  // Subtitle
                   Text(
                     '오늘 머릿속에 남아있는 것들을\n잠시 내려놓아 보세요.',
                     textAlign: TextAlign.center,
-                    style: AppTokens.body,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppTokens.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '걱정은 잠시 맡겨두고, 필요한 것만 다시 꺼내볼 수 있습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTokens.textMuted.withOpacity(0.8),
+                    ),
                   ),
 
-                  // B. Tree visual in center area
+                  // B. Tree preview
                   const SizedBox(height: 36),
                   _buildTreePreview(),
 
-                  // C. Primary button — "시작하기" sage green full-width
+                  // C. Actions
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
@@ -92,6 +103,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       onPressed: isLoading
                           ? null
                           : () {
+                              // Reset state for a fresh session
                               ref.read(itemsProvider.notifier).reset();
                               ref.read(summaryProvider.notifier).reset();
                               ref
@@ -111,7 +123,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                           : Text('시작하기', style: AppTokens.buttonPrimary),
                     ),
                   ),
-                  // Secondary — "맡겨둔 것 확인하기"
                   if (hasReviewable) ...[
                     const SizedBox(height: 10),
                     SizedBox(
@@ -120,12 +131,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       child: OutlinedButton(
                         onPressed: () => context.go('/review'),
                         child: Text('맡겨둔 것 확인하기',
-                            style: AppTokens.buttonSecondary
-                                .copyWith(fontSize: 13)),
+                            style: AppTokens.buttonSecondary.copyWith(fontSize: 13)),
                       ),
                     ),
                   ],
-                  // Tertiary — "조용한 나무 보기"
                   const SizedBox(height: 14),
                   TextButton(
                     onPressed: _isLaunchingGarden ? null : _launchGarden,
@@ -133,7 +142,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       '조용한 나무 보기',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTokens.textSecondary.withOpacity(0.7),
+                        color: AppTokens.textMuted.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -144,7 +153,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                     'v${BuildInfo.appVersion} ${BuildInfo.buildChannel} · ${BuildInfo.commitSha}',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTokens.textSecondary.withOpacity(0.35),
+                      color: AppTokens.textMuted.withOpacity(0.35),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -161,9 +170,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final storage = ref.watch(localStorageProvider);
     final nutrients = storage.totalWorryNutrients;
 
-    return SizedBox(
+    return ProductSurface(
       width: double.infinity,
       height: 200,
+      padding: EdgeInsets.zero,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -177,9 +187,17 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            getPotSignalMessage(nutrients),
+            '조용한 나무',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '내려놓은 걱정은 나무의 양분이 됩니다.',
             style: AppTokens.caption,
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -206,6 +224,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     await Process.start(exePath, ['--garden'],
         mode: ProcessStartMode.detached);
 
+    // 3-second cooldown to prevent rapid clicks
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _isLaunchingGarden = false);
     });
@@ -232,26 +251,16 @@ class _MiniTreePainter extends CustomPainter {
 
     if (nutrients == 0) return;
 
-    final stage = getPlantStage(nutrients);
-
-    // Stem height based on stage
-    double stemHeight;
-    if (stage.index >= 8) {
-      stemHeight = 50.0;
-    } else if (stage.index >= 6) {
-      stemHeight = 42.0;
-    } else if (stage.index >= 4) {
-      stemHeight = 35.0;
-    } else if (stage.index >= 2) {
-      stemHeight = 24.0;
-    } else {
-      stemHeight = 14.0;
-    }
-
+    // Stem
+    final stemHeight = nutrients >= 15
+        ? 35.0
+        : nutrients >= 7
+            ? 28.0
+            : nutrients >= 3
+                ? 20.0
+                : 12.0;
     final stemPaint = Paint()
-      ..color = stage.index >= 4
-          ? const Color(0xFF6B5B4B)
-          : const Color(0xFF6B8E6B)
+      ..color = const Color(0xFF6B8E6B)
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(
@@ -261,19 +270,14 @@ class _MiniTreePainter extends CustomPainter {
     );
 
     // Canopy
-    if (stage.index >= 2) {
+    if (nutrients >= 3) {
       final leafPaint = Paint()
         ..color = const Color(0xFF7B9E87).withOpacity(0.5);
-      double canopySize;
-      if (stage.index >= 8) {
-        canopySize = 36.0;
-      } else if (stage.index >= 6) {
-        canopySize = 30.0;
-      } else if (stage.index >= 4) {
-        canopySize = 24.0;
-      } else {
-        canopySize = 16.0;
-      }
+      final canopySize = nutrients >= 15
+          ? 28.0
+          : nutrients >= 7
+              ? 20.0
+              : 14.0;
       canvas.drawOval(
         Rect.fromCenter(
           center: Offset(cx, groundY - 3 - stemHeight + 4),

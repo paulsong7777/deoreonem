@@ -18,8 +18,8 @@ const _keyOverlayX = 'garden_overlay_position_x';
 const _keyOverlayY = 'garden_overlay_position_y';
 const _keyOverlayRunning = 'garden_overlay_running';
 const _keyOverlayHeartbeat = 'garden_overlay_heartbeat';
-const _windowWidth = 250.0;
-const _windowHeight = 280.0;
+const _windowWidth = 240.0;
+const _windowHeight = 270.0;
 const _staleThresholdSeconds = 15;
 
 /// Validates that a window position is within reasonable bounds.
